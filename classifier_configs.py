@@ -48,7 +48,7 @@ grids = {
         "classifier__weights": ["uniform", "distance"],
         "classifier__p": integer_uniform_from_values([1, 2])},
     'random_forest': {
-        "classifier__n_estimators": randint(20, 201),
+        "classifier__n_estimators": randint(20, 251),
         "classifier__criterion": ["gini"],
         "classifier__min_samples_split": integer_uniform_from_values([2, 3, 4, 5, 6]),
         "classifier__max_features": ["sqrt"]
@@ -62,7 +62,7 @@ grids = {
             "classifier__knn__n_neighbors": integer_uniform_from_values([1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23]),
             "classifier__knn__weights": ["uniform", "distance"],
             "classifier__knn__p": integer_uniform_from_values([1, 2]),
-            "classifier__random_forest__n_estimators": randint(20, 201),
+            "classifier__random_forest__n_estimators": randint(20, 251),
             "classifier__random_forest__criterion": ["gini"],
             "classifier__random_forest__min_samples_split": integer_uniform_from_values([2, 3, 4, 5, 6]),
             "classifier__random_forest__max_features": ["sqrt"]
@@ -76,7 +76,7 @@ grids = {
             "classifier__knn__n_neighbors": integer_uniform_from_values([1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23]),
             "classifier__knn__weights": ["uniform", "distance"],
             "classifier__knn__p": integer_uniform_from_values([1, 2]),
-            "classifier__random_forest__n_estimators": randint(20, 201),
+            "classifier__random_forest__n_estimators": randint(20, 251),
             "classifier__random_forest__criterion": ["gini"],
             "classifier__random_forest__min_samples_split": integer_uniform_from_values([2, 3, 4, 5, 6]),
             "classifier__random_forest__max_features": ["sqrt"]
