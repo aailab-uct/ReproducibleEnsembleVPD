@@ -132,7 +132,9 @@ def main(classifiers: List[str], sexes: List[str]):
         for _, row in tqdm.tqdm(table.tail(top_k).iterrows(), total=top_k):
             classifier = row["clf"]
             print(f'{row["mean_test_mcc"]} - mcc, uar - {row["mean_test_uar"]} ......... for {classifier}')
-            hyper_parameters = json.loads(row["params"].replace("'", '"'))
+            print(row["params"])
+            hyper_parameters = json.loads(row["params"].replace("'", '"').replace("np.float64(","").replace(")",""))
+            print(hyper_parameters)
             repeated_cross_validation_fit(sex=sex,
                                           dataset_id=row["data"],
                                           clf=classifier,
