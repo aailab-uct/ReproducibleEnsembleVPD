@@ -127,9 +127,10 @@ def get_classifier(classifier_name: str, both_sexes: bool = False, random_seed: 
                 VotingClassifier(
                     estimators=[
                         ("svm", SVC(max_iter=int(5e5), random_state=random_seed)),
-                        ("knn", KNeighborsClassifier()),
-                        ("random_forest", RandomForestClassifier(random_state=random_seed)),
+                        ("knn", KNeighborsClassifier(n_jobs=-1)),
+                        ("random_forest", RandomForestClassifier(random_state=random_seed, n_jobs=-1)),
                     ],
+                    n_jobs=1,
 #                    **processed_hyperparameters
                 )
             )

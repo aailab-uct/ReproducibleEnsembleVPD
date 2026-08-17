@@ -70,7 +70,8 @@ def repeated_cross_validation_fit(sex: str, dataset_id: str, clf: str, hyper_par
     pipeline,_ = get_classifier(clf, both_sexes=sex=="both", random_seed=RANDOM_SEED, hyperparameters=hyper_parameters)
     # reproducible stratified k-fold cross validation
     stratified_kfold = RepeatedStratifiedKFold(n_repeats=n_repeats, n_splits=10, random_state=RANDOM_SEED)
-    results = cross_validate(pipeline, X=X, y=y, scoring=scoring_dict, cv=stratified_kfold, n_jobs=-1)
+    validation_n_jobs = 1 if clf == "voting" else -1
+    results = cross_validate(pipeline, X=X, y=y, scoring=scoring_dict, cv=stratified_kfold, n_jobs=validation_n_jobs)
     results_average = {"dataset": dataset_id,
                        "classifier": clf,
                        "hyperparameters": hyper_parameters}

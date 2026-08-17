@@ -5,15 +5,16 @@ Datasets are balanced via SMOTE and results are obtained via stratified
 """
 import argparse
 import pickle
+import sys
+import time
 from pathlib import Path
 from typing import Union
 
-import tqdm
 import numpy as np
 import pandas as pd
 
 import sklearn
-from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold
+from sklearn.model_selection import ParameterSampler, RandomizedSearchCV, StratifiedKFold
 from sklearn.metrics import recall_score, matthews_corrcoef, balanced_accuracy_score
 from sklearn.metrics import make_scorer
 
@@ -42,6 +43,48 @@ scoring_dict = {"mcc": make_scorer(matthews_corrcoef),
                 "recall": make_scorer(recall_score),
                 "specificity": make_scorer(recall_score, pos_label=0),
                 "uar": make_scorer(balanced_accuracy_score, adjusted=False)}
+
+
+class ProgressRandomizedSearchCV(RandomizedSearchCV):
+    """RandomizedSearchCV variant that prints a single-line progress counter."""
+
+    def __init__(self, *args, progress_label: str = "Random search", progress_splits: int = 1, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.progress_label = progress_label
+        self.progress_splits = progress_splits
+
+    def _run_search(self, evaluate_candidates):
+        def format_seconds(seconds: float) -> str:
+            total_seconds = max(0, int(round(seconds)))
+            hours, remainder = divmod(total_seconds, 3600)
+            minutes, secs = divmod(remainder, 60)
+            if hours:
+                return f"{hours:d}h {minutes:02d}m {secs:02d}s"
+            if minutes:
+                return f"{minutes:d}m {secs:02d}s"
+            return f"{secs:d}s"
+
+        total_fits = self.n_iter * self.progress_splits
+        started_at = time.time()
+        for candidate_index, params in enumerate(
+            ParameterSampler(self.param_distributions, self.n_iter, random_state=self.random_state),
+            start=1,
+        ):
+            evaluate_candidates([params])
+            fits_completed = candidate_index * self.progress_splits
+            elapsed_seconds = time.time() - started_at
+            seconds_per_fit = elapsed_seconds / fits_completed
+            remaining_fits = total_fits - fits_completed
+            eta_seconds = remaining_fits * seconds_per_fit
+            sys.stdout.write(
+                f"\r{self.progress_label}: {fits_completed}/{total_fits} fits completed"
+                f" | elapsed {format_seconds(elapsed_seconds)}"
+                f" | avg {seconds_per_fit:.2f}s/fit"
+                f" | ETA {format_seconds(eta_seconds)}"
+            )
+            sys.stdout.flush()
+        sys.stdout.write("\n")
+        sys.stdout.flush()
 
 
 def get_datasets_to_process(datasets_path: Path, results_data: Path,
@@ -104,16 +147,33 @@ def main(sex: str = "women", classifier="voting", dataset_slice=None):
         pipeline, param_grid = get_classifier(classifier, both_sexes=sex=="both", random_seed=RANDOM_SEED)
         cross_validation = StratifiedKFold(n_splits=10, shuffle=True, random_state=RANDOM_SEED)
         # sklearn randomized search with cross validation
-        random_search = RandomizedSearchCV(
-            pipeline,
-            param_distributions=param_grid,
-            n_iter=N_ITER_SEARCH,
-            cv=cross_validation,
-            scoring=scoring_dict,
-            n_jobs=-1,
-            refit=False,
-            random_state=RANDOM_SEED,
-        )
+        search_n_jobs = 1 if classifier == "voting" else -1
+        if classifier == "voting":
+            total_fits = N_ITER_SEARCH * cross_validation.get_n_splits()
+            print(f"Starting VotingClassifier random search for {training_dataset.name}: {total_fits} fits total.")
+            random_search = ProgressRandomizedSearchCV(
+                pipeline,
+                param_distributions=param_grid,
+                n_iter=N_ITER_SEARCH,
+                cv=cross_validation,
+                scoring=scoring_dict,
+                n_jobs=search_n_jobs,
+                refit=False,
+                random_state=RANDOM_SEED,
+                progress_label=f"VotingClassifier random search for {training_dataset.name}",
+                progress_splits=cross_validation.get_n_splits(),
+            )
+        else:
+            random_search = RandomizedSearchCV(
+                pipeline,
+                param_distributions=param_grid,
+                n_iter=N_ITER_SEARCH,
+                cv=cross_validation,
+                scoring=scoring_dict,
+                n_jobs=search_n_jobs,
+                refit=False,
+                random_state=RANDOM_SEED,
+            )
         random_search.fit(dataset["X"], dataset["y"])
         # create folder with the training_dataset name to store results
         results_file.mkdir(exist_ok=True)
