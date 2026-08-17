@@ -3,26 +3,28 @@ Script that performs randomized search for classifiers across various datasets.
 Datasets are balanced via SMOTE and results are obtained via stratified
 10-fold cross-validation.
 """
+
 import argparse
+import os
 import pickle
 import sys
 import time
+import warnings
 from pathlib import Path
-from typing import Union
 
 import numpy as np
 import pandas as pd
-
 import sklearn
-from sklearn.model_selection import ParameterSampler, RandomizedSearchCV, StratifiedKFold
-from sklearn.metrics import recall_score, balanced_accuracy_score
-from sklearn.metrics import make_scorer
+from sklearn.metrics import balanced_accuracy_score, make_scorer, recall_score
+from sklearn.model_selection import (
+    ParameterSampler,
+    RandomizedSearchCV,
+    StratifiedKFold,
+)
 
 from classifier_configs import get_classifier
-from src.checksum import update_checksums
 
 # Disable warnings
-import os, warnings
 warnings.simplefilter("ignore")
 os.environ["PYTHONWARNINGS"] = "ignore"
 
@@ -39,22 +41,30 @@ sklearn.set_config(
 )
 
 # specification of evaluated metrics
-scoring_dict = {"recall": make_scorer(recall_score),
-                "specificity": make_scorer(recall_score, pos_label=0),
-                "uar": make_scorer(balanced_accuracy_score, adjusted=False)}
+scoring_dict = {
+    "recall": make_scorer(recall_score),
+    "specificity": make_scorer(recall_score, pos_label=0),
+    "uar": make_scorer(balanced_accuracy_score, adjusted=False),
+}
 
 
 class ProgressRandomizedSearchCV(RandomizedSearchCV):
     """RandomizedSearchCV variant that prints a single-line progress counter."""
 
-    def __init__(self, *args, progress_label: str = "Random search", progress_splits: int = 1, **kwargs):
+    def __init__(
+        self,
+        *args,
+        progress_label: str = "Random search",
+        progress_splits: int = 1,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.progress_label = progress_label
         self.progress_splits = progress_splits
 
     def _run_search(self, evaluate_candidates):
         def format_seconds(seconds: float) -> str:
-            total_seconds = max(0, int(round(seconds)))
+            total_seconds = max(0, round(seconds))
             hours, remainder = divmod(total_seconds, 3600)
             minutes, secs = divmod(remainder, 60)
             if hours:
@@ -66,7 +76,9 @@ class ProgressRandomizedSearchCV(RandomizedSearchCV):
         total_fits = self.n_iter * self.progress_splits
         started_at = time.time()
         for candidate_index, params in enumerate(
-            ParameterSampler(self.param_distributions, self.n_iter, random_state=self.random_state),
+            ParameterSampler(
+                self.param_distributions, self.n_iter, random_state=self.random_state
+            ),
             start=1,
         ):
             evaluate_candidates([params])
@@ -86,8 +98,9 @@ class ProgressRandomizedSearchCV(RandomizedSearchCV):
         sys.stdout.flush()
 
 
-def get_datasets_to_process(datasets_path: Path, results_data: Path,
-                            dataset_slice: Union[tuple, int, None] = None):
+def get_datasets_to_process(
+    datasets_path: Path, results_data: Path, dataset_slice: tuple | int | None = None
+):
     """
     Get datasets that were not evaluated.
     :param datasets_path: Path, path to training datasets
@@ -99,16 +112,17 @@ def get_datasets_to_process(datasets_path: Path, results_data: Path,
     # get all datasets in training_data
     td = sorted([str(x.name) for x in datasets_path.iterdir()])
     if isinstance(dataset_slice, tuple):
-        td = list(td)[dataset_slice[0]:dataset_slice[1]]
+        td = list(td)[dataset_slice[0] : dataset_slice[1]]
     elif isinstance(dataset_slice, int):
         td = list(td)[:dataset_slice]
 
     # get all datasets, that were already evaluated
     tr = sorted([str(x.name) for x in results_data.iterdir()])
     # only evaluate datasets that were not processed so far
-    to_do = sorted(list(set(td) - set(tr)))
+    to_do = sorted(set(td) - set(tr))
 
     return to_do
+
 
 # pylint: disable=too-many-locals
 
@@ -134,22 +148,34 @@ def main(sex: str = "women", classifier="voting", dataset_slice=None):
         results_file = results_data.joinpath(str(training_dataset_str))
         # path to training dataset
         training_dataset = training_data.joinpath(training_dataset_str)
-        #print(f"evaluate {training_dataset}")
-        results_data.joinpath(str(training_dataset.name)).mkdir(parents=True, exist_ok=True)
+        # print(f"evaluate {training_dataset}")
+        results_data.joinpath(str(training_dataset.name)).mkdir(
+            parents=True, exist_ok=True
+        )
         # load dataset
-        with open(training_data.joinpath(str(training_dataset.name), "dataset.pk"), "rb") as f:
+        with open(
+            training_data.joinpath(str(training_dataset.name), "dataset.pk"), "rb"
+        ) as f:
             train_set = pickle.load(f)
-        dataset = {"X": np.array(train_set["data"], dtype=np.float64),
-                   "y": np.array(train_set["labels"])}
+        dataset = {
+            "X": np.array(train_set["data"], dtype=np.float64),
+            "y": np.array(train_set["labels"]),
+        }
         # imblearn pipeline perform the resampling only with the training dataset
         # and scaling according to training dataset
-        pipeline, param_grid = get_classifier(classifier, both_sexes=sex=="both", random_seed=RANDOM_SEED)
-        cross_validation = StratifiedKFold(n_splits=10, shuffle=True, random_state=RANDOM_SEED)
+        pipeline, param_grid = get_classifier(
+            classifier, both_sexes=sex == "both", random_seed=RANDOM_SEED
+        )
+        cross_validation = StratifiedKFold(
+            n_splits=10, shuffle=True, random_state=RANDOM_SEED
+        )
         # sklearn randomized search with cross validation
-        search_n_jobs = -1 # if classifier == "voting" else -1
+        search_n_jobs = -1  # if classifier == "voting" else -1
 
         total_fits = N_ITER_SEARCH * cross_validation.get_n_splits()
-        print(f"Starting VotingClassifier random search for {training_dataset.name}: {total_fits} fits total.")
+        print(
+            f"Starting VotingClassifier random search for {training_dataset.name}: {total_fits} fits total."
+        )
         random_search = ProgressRandomizedSearchCV(
             pipeline,
             param_distributions=param_grid,
@@ -184,11 +210,17 @@ def main(sex: str = "women", classifier="voting", dataset_slice=None):
 
         # dump randomized search results to results.csv
         pd.DataFrame(random_search.cv_results_).round(6)[
-            ["params", "mean_test_recall", "mean_test_specificity",
-             "mean_test_uar"]].to_csv(
+            ["params", "mean_test_recall", "mean_test_specificity", "mean_test_uar"]
+        ].to_csv(
             results_file.joinpath("results.csv"),
-            index=False, mode="a",
-            header=header,encoding="utf8",lineterminator="\n")
+            index=False,
+            mode="a",
+            header=header,
+            encoding="utf8",
+            lineterminator="\n",
+        )
+
+
 # pylint: enable=too-many-locals
 
 
@@ -196,7 +228,7 @@ if __name__ == "__main__":
     # argument parser
     parser = argparse.ArgumentParser(
         prog="classifier_pipeline.py",
-        description="Perform randomized search for a classifier across various datasets. "
+        description="Perform randomized search for a classifier across various datasets. ",
     )
     parser.add_argument("classifier", type=str)
     parser.add_argument("sex", type=str)
@@ -206,5 +238,3 @@ if __name__ == "__main__":
     used_classifier = args.classifier
     data_slice = None if not args.test else 50
     main(sex_to_compute, used_classifier, data_slice)
-    # compute results checksum and compare it with ours results to ensure the reproducible results
-    # update_checksums(Path("results"),Path("misc").joinpath("after_IV.sha256"))

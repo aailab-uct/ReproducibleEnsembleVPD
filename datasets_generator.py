@@ -1,18 +1,20 @@
 """
 Script to generate all evaluated datasets, with various features combinations
 """
+
 import csv
 import itertools
 import json
+import os
 import pickle
 import random
-
-from pathlib import Path
+import warnings
 from multiprocessing import freeze_support
+from pathlib import Path
+
 from tqdm.contrib.concurrent import process_map
 
 # Disable warnings
-import os, warnings
 warnings.simplefilter("ignore")
 os.environ["PYTHONWARNINGS"] = "ignore"
 
@@ -51,8 +53,9 @@ def dump_to_pickle(data, file_path) -> None:
     :param file_path: path to dump the dataset
     :return: None
     """
-    with open(file_path, 'wb') as pickle_file:
+    with open(file_path, "wb") as pickle_file:
         pickle.dump(data, pickle_file)
+
 
 # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 
@@ -78,7 +81,10 @@ def compose_dataset(dataset_params: dict) -> None:
         for patient in dataset:
             patient_features = []
             # select patients according to the specified sex
-            if int(patient["sex"]) == dataset_params["sex"] or dataset_params["sex"] is None:
+            if (
+                int(patient["sex"]) == dataset_params["sex"]
+                or dataset_params["sex"] is None
+            ):
                 # check specified features and add them to dataset that will be dumped
                 y.append(int(patient["pathology"]))
                 patient_features.append(int(patient["sex"]))
@@ -88,14 +94,12 @@ def compose_dataset(dataset_params: dict) -> None:
                 if dataset_params["diff_pitch"]:
                     patient_features.append(float(patient["diff_pitch"]))
 
-
                 patient_features.append(float(patient["mean_f0"]))
 
                 if dataset_params["stdev_f0"]:
                     patient_features.append(float(patient["stdev_f0"]))
 
                 patient_features.append(float(patient["hnr"]))
-
 
                 patient_features.append(float(patient["jitter"]))
 
@@ -137,13 +141,15 @@ def compose_dataset(dataset_params: dict) -> None:
 
     dataset_path = Path(".").joinpath("training_data", subdir_name, folder_to_dump)
     if dataset_path.exists():
-        #print(f"Directory {dataset_path.name} already exists, skipping.")
+        # print(f"Directory {dataset_path.name} already exists, skipping.")
         return
     dataset_path.mkdir(parents=True)
     dataset_file = dataset_path.joinpath("dataset.pk")
     # dump dataset and its configuration to the unique folder
     dump_to_pickle(data_to_dump, dataset_file)
     dataset_config_to_json(dataset_params, dataset_path.joinpath("config.json"))
+
+
 # pylint: enable=too-many-locals,too-many-branches,too-many-statements
 
 # pylint: disable=too-many-locals
@@ -158,30 +164,57 @@ def main(max_workers: int = 8) -> None:
     for sex_of_interest in sexes:
         configurations = []
 
-        for folder_to_dump, settings in enumerate(itertools.product(diff_pitch, stdev_f0, spectral_centroid,
-                                                         spectral_contrast, spectral_flatness,
-                                                         spectral_rolloff, zcr, skewness, shannon_entropy)):
-            diff, stdev, centroid, contrast, flatness, rolloff, zrc_param, skew, shannon = settings
+        for folder_to_dump, settings in enumerate(
+            itertools.product(
+                diff_pitch,
+                stdev_f0,
+                spectral_centroid,
+                spectral_contrast,
+                spectral_flatness,
+                spectral_rolloff,
+                zcr,
+                skewness,
+                shannon_entropy,
+            )
+        ):
+            (
+                diff,
+                stdev,
+                centroid,
+                contrast,
+                flatness,
+                rolloff,
+                zrc_param,
+                skew,
+                shannon,
+            ) = settings
             # dataset configuration
-            dataset_config = {"sex": sex_of_interest,
-                              "diff_pitch": diff,
-                              "stdev_f0": stdev,
-                              "spectral_centroid": centroid,
-                              "spectral_contrast": contrast,
-                              "spectral_flatness": flatness,
-                              "spectral_rolloff": rolloff,
-                              "zero_crossing_rate": zrc_param,
-                              "skewness": skew,
-                              "shannon_entropy": shannon,
-                              "folder_to_dump": str(folder_to_dump),}
+            dataset_config = {
+                "sex": sex_of_interest,
+                "diff_pitch": diff,
+                "stdev_f0": stdev,
+                "spectral_centroid": centroid,
+                "spectral_contrast": contrast,
+                "spectral_flatness": flatness,
+                "spectral_rolloff": rolloff,
+                "zero_crossing_rate": zrc_param,
+                "skewness": skew,
+                "shannon_entropy": shannon,
+                "folder_to_dump": str(folder_to_dump),
+            }
             configurations.append(dataset_config)
 
-        print(f"Totally {len(configurations)} datasets will be created for sex {sex_of_interest}")
+        print(
+            f"Totally {len(configurations)} datasets will be created for sex {sex_of_interest}"
+        )
 
         # use max_workes possible, according to your CPU, it speeds up set creation significantly
         # i.e. my Ryzen with 12 cores (max_workers=24) creates all datasets in 2 minutes
         # i.e. Intel Core i5 7th gen. with 4 workers took hours to finish.
-        process_map(compose_dataset, configurations, max_workers=max_workers, chunksize=4)
+        process_map(
+            compose_dataset, configurations, max_workers=max_workers, chunksize=4
+        )
+
 
 # pylint: enable=too-many-locals
 

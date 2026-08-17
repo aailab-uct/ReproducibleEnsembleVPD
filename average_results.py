@@ -6,17 +6,18 @@ Script to compute average performance of the various classifiers with various
 hyperparameters for each dataset. It iterates over results folder and
 corresponding subfolders and evaluates all results.csv files.
 """
-from pathlib import Path
-from typing import List
-import tqdm
-import pandas as pd
 
-from src.checksum import update_checksums
+import os
+import warnings
+from pathlib import Path
+
+import pandas as pd
+import tqdm
 
 # Disable warnings
-import os, warnings
 warnings.simplefilter("ignore")
 os.environ["PYTHONWARNINGS"] = "ignore"
+
 
 def compute_stats(file_path):
     """
@@ -40,7 +41,7 @@ def compute_stats(file_path):
     return results
 
 
-def process_results(classifiers: List[str]):
+def process_results(classifiers: list[str]):
     """
     Function to iterate over results/svm folder and evaluate
     the average performance of various classifiers with various hyperparameters
@@ -59,8 +60,9 @@ def process_results(classifiers: List[str]):
 
         for folder in sorted(path_to_results.iterdir()):
             # iterate over men/women/both
-            result_summary = Path(results_tables_dir,
-                                  f"results_{classifier}_{folder.name}.csv")
+            result_summary = Path(
+                results_tables_dir, f"results_{classifier}_{folder.name}.csv"
+            )
             if result_summary.is_file():
                 print(f"File {result_summary} already exists. Overwriting...")
 
@@ -72,13 +74,21 @@ def process_results(classifiers: List[str]):
                 # compute average metrics
                 exp_stats = compute_stats(result_file)
 
-                all_stats = pd.concat([all_stats, pd.DataFrame(exp_stats)], ignore_index=True)
+                all_stats = pd.concat(
+                    [all_stats, pd.DataFrame(exp_stats)], ignore_index=True
+                )
 
             # dump average metrics for a dataset into csv file
-            all_stats.to_csv(result_summary, header=True, index=False, mode="w",
-                             sep=",", encoding="utf-8", lineterminator="\n")
+            all_stats.to_csv(
+                result_summary,
+                header=True,
+                index=False,
+                mode="w",
+                sep=",",
+                encoding="utf-8",
+                lineterminator="\n",
+            )
 
 
 if __name__ == "__main__":
     process_results(classifiers=["voting"])
-    update_checksums(Path("results_tables"), Path("misc").joinpath("after_V.sha256"))

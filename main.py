@@ -3,7 +3,6 @@ This is the main file of the project. It is used to run all the other files in t
 and to check everything is working as expected.
 """
 
-# Disable warnings
 import os
 import warnings
 from multiprocessing import freeze_support
@@ -14,6 +13,7 @@ from datasets_generator import main as datasets_generator
 from feature_maker import main as feature_maker
 from repeated_cross_validation_best import main as repeated_cross_validation_best
 
+# Disable warnings
 warnings.simplefilter("ignore")
 os.environ["PYTHONWARNINGS"] = "ignore"
 

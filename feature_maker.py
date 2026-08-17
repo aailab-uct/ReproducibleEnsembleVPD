@@ -239,7 +239,7 @@ def main() -> None:
     features = feature_extraction_pipe(records)
 
     print(features.head())
-    features.to_csv(Path(f"features.csv"))
+    features.to_csv(Path("features.csv"))
 
 
 if __name__ == "__main__":
