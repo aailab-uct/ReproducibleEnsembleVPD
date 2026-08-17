@@ -28,7 +28,7 @@ os.environ["PYTHONWARNINGS"] = "ignore"
 # setup random seed to make code reproducible
 RANDOM_SEED = 42
 np.random.seed(RANDOM_SEED)
-N_ITER_SEARCH = 10000
+N_ITER_SEARCH = 50000
 
 
 # speedup

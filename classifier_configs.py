@@ -130,7 +130,7 @@ def get_classifier(classifier_name: str, both_sexes: bool = False, random_seed: 
                         ("knn", KNeighborsClassifier()),
                         ("random_forest", RandomForestClassifier(random_state=random_seed)),
                     ],
-                    **processed_hyperparameters
+#                    **processed_hyperparameters
                 )
             )
         case _:
@@ -140,4 +140,6 @@ def get_classifier(classifier_name: str, both_sexes: bool = False, random_seed: 
         ("minmaxscaler", MinMaxScaler()),
         classifier
     ])
+    if hyperparameters is not None:
+        pipe.set_params(**hyperparameters)
     return pipe, grids[classifier_name]

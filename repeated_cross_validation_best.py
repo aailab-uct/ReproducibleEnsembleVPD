@@ -135,6 +135,7 @@ def main(classifiers: List[str], sexes: List[str]):
             print(row["params"])
             hyper_parameters = json.loads(row["params"].replace("'", '"').replace("np.float64(","").replace(")",""))
             print(hyper_parameters)
+            print(classifier)
             repeated_cross_validation_fit(sex=sex,
                                           dataset_id=row["data"],
                                           clf=classifier,
