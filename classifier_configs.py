@@ -44,9 +44,9 @@ grids = {
         "classifier__gamma": loguniform(0.001, 1),
     },
     'knn': {
-        "classifier__n_neighbors": integer_uniform_from_values([1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23]),
+        "classifier__n_neighbors": [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23],
         "classifier__weights": ["uniform", "distance"],
-        "classifier__p": integer_uniform_from_values([1, 2])},
+        "classifier__p": [1, 2]},
     'random_forest': {
         "classifier__n_estimators": randint(20, 251),
         "classifier__criterion": ["gini"],
@@ -108,17 +108,17 @@ def get_classifier(classifier_name: str, both_sexes: bool = False, random_seed: 
     match classifier_name:
         case "svm_poly":
             classifier = ("classifier", SVC(max_iter=int(5e5),
-                                            random_state=random_seed,
+                                            random_state=random_seed, class_weight="balanced",
                                             **processed_hyperparameters))
         case "svm_rbf":
             classifier = ("classifier", SVC(max_iter=int(5e5),
-                                            random_state=random_seed,
+                                            random_state=random_seed, class_weight="balanced",
                                             **processed_hyperparameters))
         case "knn":
-            classifier = ("classifier", KNeighborsClassifier(**processed_hyperparameters))
+            classifier = ("classifier", KNeighborsClassifier(n_jobs=-1, **processed_hyperparameters))
 
         case "random_forest":
-            classifier = ("classifier", RandomForestClassifier(random_state=random_seed,
+            classifier = ("classifier", RandomForestClassifier(random_state=random_seed,n_jobs=-1, class_weight="balanced",
                                                                **processed_hyperparameters))
 
         case "voting":
@@ -126,11 +126,11 @@ def get_classifier(classifier_name: str, both_sexes: bool = False, random_seed: 
                 "classifier",
                 VotingClassifier(
                     estimators=[
-                        ("svm", SVC(max_iter=int(5e5), random_state=random_seed)),
-                        ("knn", KNeighborsClassifier(n_jobs=-1)),
-                        ("random_forest", RandomForestClassifier(random_state=random_seed, n_jobs=-1)),
+                        ("svm", SVC(max_iter=int(5e5), random_state=random_seed, class_weight="balanced")),
+                        ("knn", KNeighborsClassifier(n_jobs=1)),
+                        ("random_forest", RandomForestClassifier(random_state=random_seed, n_jobs=1, class_weight="balanced")),
                     ],
-                    n_jobs=1,
+                    n_jobs=-1,
 #                    **processed_hyperparameters
                 )
             )

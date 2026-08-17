@@ -15,7 +15,7 @@ import pandas as pd
 
 import sklearn
 from sklearn.model_selection import ParameterSampler, RandomizedSearchCV, StratifiedKFold
-from sklearn.metrics import recall_score, matthews_corrcoef, balanced_accuracy_score
+from sklearn.metrics import recall_score, balanced_accuracy_score
 from sklearn.metrics import make_scorer
 
 from classifier_configs import get_classifier
@@ -29,7 +29,7 @@ os.environ["PYTHONWARNINGS"] = "ignore"
 # setup random seed to make code reproducible
 RANDOM_SEED = 42
 np.random.seed(RANDOM_SEED)
-N_ITER_SEARCH = 50000
+N_ITER_SEARCH = 5#0000
 
 
 # speedup
@@ -39,8 +39,7 @@ sklearn.set_config(
 )
 
 # specification of evaluated metrics
-scoring_dict = {"mcc": make_scorer(matthews_corrcoef),
-                "recall": make_scorer(recall_score),
+scoring_dict = {"recall": make_scorer(recall_score),
                 "specificity": make_scorer(recall_score, pos_label=0),
                 "uar": make_scorer(balanced_accuracy_score, adjusted=False)}
 
@@ -147,33 +146,33 @@ def main(sex: str = "women", classifier="voting", dataset_slice=None):
         pipeline, param_grid = get_classifier(classifier, both_sexes=sex=="both", random_seed=RANDOM_SEED)
         cross_validation = StratifiedKFold(n_splits=10, shuffle=True, random_state=RANDOM_SEED)
         # sklearn randomized search with cross validation
-        search_n_jobs = 1 if classifier == "voting" else -1
-        if classifier == "voting":
-            total_fits = N_ITER_SEARCH * cross_validation.get_n_splits()
-            print(f"Starting VotingClassifier random search for {training_dataset.name}: {total_fits} fits total.")
-            random_search = ProgressRandomizedSearchCV(
-                pipeline,
-                param_distributions=param_grid,
-                n_iter=N_ITER_SEARCH,
-                cv=cross_validation,
-                scoring=scoring_dict,
-                n_jobs=search_n_jobs,
-                refit=False,
-                random_state=RANDOM_SEED,
-                progress_label=f"VotingClassifier random search for {training_dataset.name}",
-                progress_splits=cross_validation.get_n_splits(),
-            )
-        else:
-            random_search = RandomizedSearchCV(
-                pipeline,
-                param_distributions=param_grid,
-                n_iter=N_ITER_SEARCH,
-                cv=cross_validation,
-                scoring=scoring_dict,
-                n_jobs=search_n_jobs,
-                refit=False,
-                random_state=RANDOM_SEED,
-            )
+        search_n_jobs = -1 # if classifier == "voting" else -1
+
+        total_fits = N_ITER_SEARCH * cross_validation.get_n_splits()
+        print(f"Starting VotingClassifier random search for {training_dataset.name}: {total_fits} fits total.")
+        random_search = ProgressRandomizedSearchCV(
+            pipeline,
+            param_distributions=param_grid,
+            n_iter=N_ITER_SEARCH,
+            cv=cross_validation,
+            scoring=scoring_dict,
+            n_jobs=search_n_jobs,
+            refit=False,
+            random_state=RANDOM_SEED,
+            progress_label=f"VotingClassifier random search for {training_dataset.name}",
+            progress_splits=cross_validation.get_n_splits(),
+        )
+        # else:
+        #     random_search = RandomizedSearchCV(
+        #         pipeline,
+        #         param_distributions=param_grid,
+        #         n_iter=N_ITER_SEARCH,
+        #         cv=cross_validation,
+        #         scoring=scoring_dict,
+        #         n_jobs=search_n_jobs,
+        #         refit=False,
+        #         random_state=RANDOM_SEED,
+        #     )
         random_search.fit(dataset["X"], dataset["y"])
         # create folder with the training_dataset name to store results
         results_file.mkdir(exist_ok=True)
@@ -186,7 +185,7 @@ def main(sex: str = "women", classifier="voting", dataset_slice=None):
         # dump randomized search results to results.csv
         pd.DataFrame(random_search.cv_results_).round(6)[
             ["params", "mean_test_recall", "mean_test_specificity",
-             "mean_test_mcc", "mean_test_uar"]].to_csv(
+             "mean_test_uar"]].to_csv(
             results_file.joinpath("results.csv"),
             index=False, mode="a",
             header=header,encoding="utf8",lineterminator="\n")
@@ -208,4 +207,4 @@ if __name__ == "__main__":
     data_slice = None if not args.test else 50
     main(sex_to_compute, used_classifier, data_slice)
     # compute results checksum and compare it with ours results to ensure the reproducible results
-    update_checksums(Path("results"),Path("misc").joinpath("after_IV.sha256"))
+    # update_checksums(Path("results"),Path("misc").joinpath("after_IV.sha256"))

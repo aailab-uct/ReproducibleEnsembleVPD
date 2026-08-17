@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import sklearn
 from sklearn.model_selection import cross_validate, RepeatedStratifiedKFold
-from sklearn.metrics import recall_score, matthews_corrcoef, make_scorer, balanced_accuracy_score
+from sklearn.metrics import recall_score, make_scorer, balanced_accuracy_score
 
 from classifier_configs import get_classifier
 from src.checksum import update_checksums
@@ -37,8 +37,7 @@ sklearn.set_config(
 )
 
 # specification of evaluated metrics
-scoring_dict = {"mcc": make_scorer(matthews_corrcoef),
-                "recall": make_scorer(recall_score),
+scoring_dict = {"recall": make_scorer(recall_score),
                 "specificity": make_scorer(recall_score, pos_label=0),
                 "uar": make_scorer(balanced_accuracy_score, adjusted=False)}
 
@@ -70,7 +69,7 @@ def repeated_cross_validation_fit(sex: str, dataset_id: str, clf: str, hyper_par
     pipeline,_ = get_classifier(clf, both_sexes=sex=="both", random_seed=RANDOM_SEED, hyperparameters=hyper_parameters)
     # reproducible stratified k-fold cross validation
     stratified_kfold = RepeatedStratifiedKFold(n_repeats=n_repeats, n_splits=10, random_state=RANDOM_SEED)
-    validation_n_jobs = 1 if clf == "voting" else -1
+    validation_n_jobs = -1
     results = cross_validate(pipeline, X=X, y=y, scoring=scoring_dict, cv=stratified_kfold, n_jobs=validation_n_jobs)
     results_average = {"dataset": dataset_id,
                        "classifier": clf,
@@ -124,7 +123,7 @@ def main(classifiers: List[str], sexes: List[str]):
                 result_files[-1]["data"] = csv_path.parent.name # store the dataset id in the dataframe
                 result_files[-1]["clf"] = classifier # store the classifier name in the dataframe
             tables[f"{classifier}_{sex}"] = pd.concat(result_files #  store the results in the dictionary
-                                              ).sort_values("mean_test_mcc", kind="mergesort" # sort the results by mcc
+                                              ).sort_values("mean_test_uar", kind="mergesort" # sort the results by uar
                                               ).reset_index(drop=True)
     # for best performing classifiers perform the repeated cross validation
     for name, table in tables.items():
@@ -132,7 +131,7 @@ def main(classifiers: List[str], sexes: List[str]):
         top_k = min(TOP_CLASSIFIERS, len(table))
         for _, row in tqdm.tqdm(table.tail(top_k).iterrows(), total=top_k):
             classifier = row["clf"]
-            print(f'{row["mean_test_mcc"]} - mcc, uar - {row["mean_test_uar"]} ......... for {classifier}')
+            print(f'{row["mean_test_uar"]} - uar ......... for {classifier}')
             print(row["params"])
             hyper_parameters = json.loads(row["params"].replace("'", '"').replace("np.float64(","").replace(")",""))
             print(hyper_parameters)
@@ -144,6 +143,6 @@ def main(classifiers: List[str], sexes: List[str]):
 
 
 if __name__ == "__main__":
-    main(classifiers=["voting"],
+    main(classifiers=["random_forest", "voting"],
          sexes=["women", "men", "both"])
     update_checksums(Path("results_xvalidation"),Path("misc").joinpath("after_VI.sha256"))

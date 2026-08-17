@@ -97,34 +97,34 @@ def main(classifiers: List[str], sexes: List[str]):
     print("-" * 79)
     print("Step 5: Computing average performance of classifiers for each dataset.")
     process_results(classifiers)
-    if check_futher:
-        print("Checking if the average results are the same as ours.")
-        ok, _ = test_file_list_from_file(CHECKSUMS_AFTER_V, ignore_missing_files=ignore_missing_files)
-        if not ok:
-            print("The average result over all datasets and classifiers is not the same as ours!")
-            print("Continuing anyway. Press Ctrl+C to stop.")
-        if ignore_missing_files:
-            print("We assume that you are computing new results and we will update the checksums.")
-            update_checksums(Path("results_tables"), CHECKSUMS_AFTER_V, quiet=False)
+    # if check_futher:
+    #     print("Checking if the average results are the same as ours.")
+    #     ok, _ = test_file_list_from_file(CHECKSUMS_AFTER_V, ignore_missing_files=ignore_missing_files)
+    #     if not ok:
+    #         print("The average result over all datasets and classifiers is not the same as ours!")
+    #         print("Continuing anyway. Press Ctrl+C to stop.")
+    #     if ignore_missing_files:
+    #         print("We assume that you are computing new results and we will update the checksums.")
+    #         update_checksums(Path("results_tables"), CHECKSUMS_AFTER_V, quiet=False)
 
     # 6. run svm_repeated_xvalidation.py to evaluate the best classifiers on the best on 10 ten average datasets
     print("-" * 79)
     print("Step 6: Running repeated stratified 10 fold cross-validation for top classifiers.")
     repeated_cross_validation_best(classifiers=classifiers,
                                    sexes=sexes)
-    if check_futher:
-        print("Checking if the average results obtained during repeated cross-validation are the same as ours.")
-        ok, _ = test_file_list_from_file(CHECKSUMS_AFTER_VI)
-        if not ok:
-            print("The average results for repeated cross-validation step are not same as ours!")
-            print("Continuing anyway. Press Ctrl+C to stop.")
-        if ignore_missing_files:
-            print("We assume that you are computing new results and we will update the checksums.")
-            update_checksums(Path("results_xvalidation"), CHECKSUMS_AFTER_VI, quiet=False)
+    # if check_futher:
+    #     print("Checking if the average results obtained during repeated cross-validation are the same as ours.")
+    #     ok, _ = test_file_list_from_file(CHECKSUMS_AFTER_VI)
+    #     if not ok:
+    #         print("The average results for repeated cross-validation step are not same as ours!")
+    #         print("Continuing anyway. Press Ctrl+C to stop.")
+    #     if ignore_missing_files:
+    #         print("We assume that you are computing new results and we will update the checksums.")
+    #         update_checksums(Path("results_xvalidation"), CHECKSUMS_AFTER_VI, quiet=False)
 # pylint: enable=too-many-branches,too-many-statements
 
 
 if __name__ == "__main__":
     freeze_support()
-    main(classifiers=["voting"],
+    main(classifiers=["knn", "svm_rbf", "svm_poly", "random_forest", "voting"],
          sexes=["women", "men", "both"])

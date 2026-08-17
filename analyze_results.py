@@ -27,7 +27,7 @@ for path in sorted(results_dir.glob("**/results.csv")):
 
 table_results = pd.concat(temp_df_list)
 table_results = table_results[(table_results.mean_test_recall >= MIN_RECALL) &
-                              (table_results.mean_test_specificity >= MIN_SPEC)].sort_values("mean_test_mcc",
+                              (table_results.mean_test_specificity >= MIN_SPEC)].sort_values("mean_test_uar",
                                                                                              kind="mergesort")
 
 for _, row in tqdm(table_results.tail(10).iterrows()):
@@ -47,7 +47,7 @@ for _, row in tqdm(table_results.tail(10).iterrows()):
 
     print(
         f'{int(row["data"]):>4} | {str_params[:-2]}| Sen: {row["mean_test_recall"]:.5f}'
-        f' - Spe: {row["mean_test_specificity"]:.5f} - UAR: {row["uar"]:.5f} - MCC: {row["mean_test_mcc"]:.5f}')
+        f' - Spe: {row["mean_test_specificity"]:.5f} - UAR: {row["uar"]:.5f}')
 
 print("")
 print(table_results["data"].value_counts().reset_index().head(30))
