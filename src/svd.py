@@ -8,8 +8,8 @@ from dateutil.relativedelta import relativedelta
 
 from .record import Record
 
-SVD_FOLDER = Path("C:\\Users\\jirsat\\Code\\voice_pipeline2\\data") / "SVD"
-CSV_FOLDER = Path("C:\\Users\\jirsat\\Code\\voice_pipeline2\\data") / "voice_data.csv"
+SVD_FOLDER = Path("data", "SVD")
+CSV_FOLDER = Path("data", "voice_data.csv")
 NSP_INT16_SCALE = 2**15
 
 

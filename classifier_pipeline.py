@@ -174,7 +174,7 @@ def main(sex: str = "women", classifier="voting", dataset_slice=None):
 
         total_fits = N_ITER_SEARCH * cross_validation.get_n_splits()
         print(
-            f"Starting VotingClassifier random search for {training_dataset.name}: {total_fits} fits total."
+            f"Starting {classifier} random search for {training_dataset.name}: {total_fits} fits total."
         )
         random_search = ProgressRandomizedSearchCV(
             pipeline,
@@ -185,7 +185,7 @@ def main(sex: str = "women", classifier="voting", dataset_slice=None):
             n_jobs=search_n_jobs,
             refit=False,
             random_state=RANDOM_SEED,
-            progress_label=f"VotingClassifier random search for {training_dataset.name}",
+            progress_label=f"{classifier} random search for {training_dataset.name}",
             progress_splits=cross_validation.get_n_splits(),
         )
         # else:
