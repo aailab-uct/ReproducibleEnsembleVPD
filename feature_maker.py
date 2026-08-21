@@ -16,7 +16,9 @@ import librosa
 import numpy as np
 import pandas as pd
 import parselmouth
+import seaborn as sns
 import spkit as sp
+from matplotlib import pyplot as plt
 from parselmouth.praat import call
 from scipy.stats import skew
 from tqdm import tqdm
@@ -112,7 +114,7 @@ def _extract_record_features(record: Record) -> dict[str, Any] | None:
     """Extract the acoustic features consumed by datasets_generator."""
     signal = record.signal
 
-    f_min, f_max = [  # TODO - reference this
+    f_min, f_max = [
         (75.0, 300.0),  # male
         (100.0, 600.0),  # female
     ][record.sex]
@@ -133,13 +135,13 @@ def _extract_record_features(record: Record) -> dict[str, Any] | None:
         pitch_data
     )
 
-    point_process = call(  # TODO - reference this
+    point_process = call(
         sound,
         "To PointProcess (periodic, cc)",
         f_min,
         f_max,
     )
-    features["jitter"] = call(  # TODO - reference this - stejne jak v JoV
+    features["jitter"] = call(
         point_process,
         "Get jitter (local)",
         0,
@@ -148,7 +150,7 @@ def _extract_record_features(record: Record) -> dict[str, Any] | None:
         0.02,
         1.3,
     )
-    features["shimmer"] = call(  # TODO - reference this - stejne jak v JoV
+    features["shimmer"] = call(
         [sound, point_process],
         "Get shimmer (local)",
         0,
@@ -159,7 +161,7 @@ def _extract_record_features(record: Record) -> dict[str, Any] | None:
         1.6,
     )
 
-    harmonicity = call(  # TODO - reference this - stejne jak v JoV krome f_min
+    harmonicity = call(
         sound,
         "To Harmonicity (cc)",
         0.01,
@@ -238,8 +240,24 @@ def main() -> None:
     feature_extraction_pipe = feature_extraction()
     features = feature_extraction_pipe(records)
 
-    print(features.head())
     features.to_csv(Path("features.csv"))
+
+    # data visualization
+    features["Sex"] = features["sex"].map({0: "Male", 1: "Female"})
+    features["Status"] = features["pathology"].map({0: "Healthy", 1: "Pathological"})
+    print(features.head())
+    g= sns.displot(
+        features,
+        row="Status",
+        kind="hist",
+        x="age",
+        hue="Sex",
+        facet_kws={"sharex": True, "sharey": False},
+    )
+    g.set_titles(template="{row_name}")
+    g.set(xlabel="Age [years]")
+    plt.savefig("age_histogram_stacked.pdf")
+    plt.show()
 
 
 if __name__ == "__main__":
