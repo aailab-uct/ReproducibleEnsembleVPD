@@ -76,9 +76,7 @@ class ProgressRandomizedSearchCV(RandomizedSearchCV):
         total_fits = self.n_iter * self.progress_splits
         started_at = time.time()
         for candidate_index, params in enumerate(
-            ParameterSampler(
-                self.param_distributions, self.n_iter, random_state=self.random_state
-            ),
+            ParameterSampler(self.param_distributions, self.n_iter, random_state=self.random_state),
             start=1,
         ):
             evaluate_candidates([params])
@@ -98,9 +96,7 @@ class ProgressRandomizedSearchCV(RandomizedSearchCV):
         sys.stdout.flush()
 
 
-def get_datasets_to_process(
-    datasets_path: Path, results_data: Path, dataset_slice: tuple | int | None = None
-):
+def get_datasets_to_process(datasets_path: Path, results_data: Path, dataset_slice: tuple | int | None = None):
     """
     Get datasets that were not evaluated.
     :param datasets_path: Path, path to training datasets
@@ -149,13 +145,9 @@ def main(sex: str = "women", classifier="voting", dataset_slice=None):
         # path to training dataset
         training_dataset = training_data.joinpath(training_dataset_str)
         # print(f"evaluate {training_dataset}")
-        results_data.joinpath(str(training_dataset.name)).mkdir(
-            parents=True, exist_ok=True
-        )
+        results_data.joinpath(str(training_dataset.name)).mkdir(parents=True, exist_ok=True)
         # load dataset
-        with open(
-            training_data.joinpath(str(training_dataset.name), "dataset.pk"), "rb"
-        ) as f:
+        with open(training_data.joinpath(str(training_dataset.name), "dataset.pk"), "rb") as f:
             train_set = pickle.load(f)
         dataset = {
             "X": np.array(train_set["data"], dtype=np.float64),
@@ -163,19 +155,13 @@ def main(sex: str = "women", classifier="voting", dataset_slice=None):
         }
         # imblearn pipeline perform the resampling only with the training dataset
         # and scaling according to training dataset
-        pipeline, param_grid = get_classifier(
-            classifier, both_sexes=sex == "both", random_seed=RANDOM_SEED
-        )
-        cross_validation = StratifiedKFold(
-            n_splits=10, shuffle=True, random_state=RANDOM_SEED
-        )
+        pipeline, param_grid = get_classifier(classifier, random_seed=RANDOM_SEED)
+        cross_validation = StratifiedKFold(n_splits=10, shuffle=True, random_state=RANDOM_SEED)
         # sklearn randomized search with cross validation
         search_n_jobs = -1  # if classifier == "voting" else -1
 
         total_fits = N_ITER_SEARCH * cross_validation.get_n_splits()
-        print(
-            f"Starting {classifier} random search for {training_dataset.name}: {total_fits} fits total."
-        )
+        print(f"Starting {classifier} random search for {training_dataset.name}: {total_fits} fits total.")
         random_search = ProgressRandomizedSearchCV(
             pipeline,
             param_distributions=param_grid,
@@ -188,17 +174,6 @@ def main(sex: str = "women", classifier="voting", dataset_slice=None):
             progress_label=f"{classifier} random search for {training_dataset.name}",
             progress_splits=cross_validation.get_n_splits(),
         )
-        # else:
-        #     random_search = RandomizedSearchCV(
-        #         pipeline,
-        #         param_distributions=param_grid,
-        #         n_iter=N_ITER_SEARCH,
-        #         cv=cross_validation,
-        #         scoring=scoring_dict,
-        #         n_jobs=search_n_jobs,
-        #         refit=False,
-        #         random_state=RANDOM_SEED,
-        #     )
         random_search.fit(dataset["X"], dataset["y"])
         # create folder with the training_dataset name to store results
         results_file.mkdir(exist_ok=True)

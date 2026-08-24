@@ -29,6 +29,7 @@ from src.svd import get_data as get_svd_data
 
 _list_excluded_f0 = []
 
+
 def exclude_records(
     records: list[Record],
     recording_ids: set[int],
@@ -49,10 +50,7 @@ def exclude_records(
         if (
             record.recording_id not in recording_ids  # filter out ids
             and (
-                not all(
-                    pathology in record.pathologies_str for pathology in pathologies
-                )
-                or soft
+                not all(pathology in record.pathologies_str for pathology in pathologies) or soft
             )  # exclude if pathologies_str contains any of the pathologies
             and record.pathologies_str
             not in pathologies  # exclude if pathologies_str fully match any record from the pathologies
@@ -104,9 +102,7 @@ def load_records() -> list[Record]:
 
     # apply postprocessing
     for record in records:
-        record.signal, _ = librosa.effects.trim(
-            record.signal, top_db=15, frame_length=256, hop_length=65
-        )
+        record.signal, _ = librosa.effects.trim(record.signal, top_db=15, frame_length=256, hop_length=65)
 
     return records
 
@@ -132,9 +128,7 @@ def _extract_record_features(record: Record) -> dict[str, Any] | None:
 
     features["mean_f0"] = np.mean(pitch_data)
     features["stdev_f0"] = np.std(pitch_data)
-    features["diff_pitch"] = (np.max(pitch_data) - np.min(pitch_data)) / np.min(
-        pitch_data
-    )
+    features["diff_pitch"] = (np.max(pitch_data) - np.min(pitch_data)) / np.min(pitch_data)
 
     point_process = call(
         sound,
@@ -177,19 +171,11 @@ def _extract_record_features(record: Record) -> dict[str, Any] | None:
         axis=1,
     ).tolist()
 
-    features["spectral_centroid"] = np.mean(
-        librosa.feature.spectral_centroid(y=signal, sr=record.fs).squeeze()
-    )
-    features["spectral_flatness"] = np.mean(
-        librosa.feature.spectral_flatness(y=signal).squeeze()
-    )
-    features["spectral_rolloff"] = np.mean(
-        librosa.feature.spectral_rolloff(y=signal, sr=record.fs).squeeze()
-    )
+    features["spectral_centroid"] = np.mean(librosa.feature.spectral_centroid(y=signal, sr=record.fs).squeeze())
+    features["spectral_flatness"] = np.mean(librosa.feature.spectral_flatness(y=signal).squeeze())
+    features["spectral_rolloff"] = np.mean(librosa.feature.spectral_rolloff(y=signal, sr=record.fs).squeeze())
 
-    features["zero_crossing_rate"] = np.mean(
-        librosa.feature.zero_crossing_rate(y=signal).squeeze()
-    )
+    features["zero_crossing_rate"] = np.mean(librosa.feature.zero_crossing_rate(y=signal).squeeze())
     features["skewness"] = skew(signal)
     features["shannon_entropy"] = sp.entropy(
         signal,
@@ -210,7 +196,7 @@ def feature_extraction() -> Callable[[list[Record]], pd.DataFrame]:
                 tqdm.write(
                     f"Dropping recording {record.datbase}:{record.recording_id}:{record.vowel}: F0 could not be extracted."
                 )
-                _list_excluded_f0.append((record.recording_id,record.pathology))
+                _list_excluded_f0.append((record.recording_id, record.pathology))
                 continue
             row = {
                 "database": record.datbase,
@@ -248,8 +234,8 @@ def main() -> None:
     features["Sex"] = features["sex"].map({0: "Male", 1: "Female"})
     features["Status"] = features["pathology"].map({0: "Healthy", 1: "Pathological"})
     print(_list_excluded_f0)
-    print(features.groupby(["Sex","Status"])["recording_id"].count())
-    g= sns.displot(
+    print(features.groupby(["Sex", "Status"])["recording_id"].count())
+    g = sns.displot(
         features,
         row="Status",
         kind="hist",

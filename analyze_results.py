@@ -23,17 +23,14 @@ results_dir = Path("results")
 temp_df_list = []
 for path in sorted(results_dir.glob("**/results.csv")):
     df = pd.read_csv(path)
-    df["uar"] = df.apply(
-        lambda row: (row.mean_test_recall + row.mean_test_specificity) / 2, axis=1
-    )
+    df["uar"] = df.apply(lambda row: (row.mean_test_recall + row.mean_test_specificity) / 2, axis=1)
 
     temp_df_list.append(df)
     temp_df_list[-1]["data"] = path.parent.name
 
 table_results = pd.concat(temp_df_list)
 table_results = table_results[
-    (table_results.mean_test_recall >= MIN_RECALL)
-    & (table_results.mean_test_specificity >= MIN_SPEC)
+    (table_results.mean_test_recall >= MIN_RECALL) & (table_results.mean_test_specificity >= MIN_SPEC)
 ].sort_values("mean_test_uar", kind="mergesort")
 
 for _, row in tqdm(table_results.tail(10).iterrows()):

@@ -13,9 +13,7 @@ CSV_FOLDER = Path("data", "voice_data.csv")
 NSP_INT16_SCALE = 2**15
 
 
-def get_data(
-    vowels: tuple[str] | None = ("a_n",), sexes: tuple = ("f", "m")
-) -> list[Record]:
+def get_data(vowels: tuple[str] | None = ("a_n",), sexes: tuple = ("f", "m")) -> list[Record]:
     """Load SVD recordings and their metadata.
 
     :param vowels: Vowel or phrase identifiers to include.
@@ -41,19 +39,13 @@ def get_data(
             # 4 recordings of shape (0, 1) - probably problem in database
             continue
         else:
-            metadata: dict = (
-                voice_data[voice_data.AufnahmeID == recording_id].iloc[0].to_dict()
-            )
+            metadata: dict = voice_data[voice_data.AufnahmeID == recording_id].iloc[0].to_dict()
 
-        pathology = int(
-            metadata["AufnahmeTyp"] == "p"
-        )  # equivalent to testing if Pathologien is nan
+        pathology = int(metadata["AufnahmeTyp"] == "p")  # equivalent to testing if Pathologien is nan
         # note that Diagnose might be nan even if Pathologien is not
 
         # parse sex, patient_id and agwe
-        sex = (
-            1 if metadata["Geschlecht"] == "w" else 0
-        )  # there are no other symbols than w and m in this column
+        sex = 1 if metadata["Geschlecht"] == "w" else 0  # there are no other symbols than w and m in this column
         patient_id: int = metadata["SprecherID"]
         age = relativedelta(
             parse(metadata["AufnahmeDatum"]),  # date of recording
@@ -91,9 +83,7 @@ def get_data(
         kwargs = {}
         if remarks_file.exists():
             with open(remarks_file, "r") as f:
-                kwargs["remarks"] = ";".join(
-                    [line.rstrip() for line in f if line != ""]
-                )
+                kwargs["remarks"] = ";".join([line.rstrip() for line in f if line != ""])
 
         # add diagnose to kwargs if not empty
         if not pd.isna(metadata["Diagnose"]):

@@ -60,9 +60,7 @@ def process_results(classifiers: list[str]):
 
         for folder in sorted(path_to_results.iterdir()):
             # iterate over men/women/both
-            result_summary = Path(
-                results_tables_dir, f"results_{classifier}_{folder.name}.csv"
-            )
+            result_summary = Path(results_tables_dir, f"results_{classifier}_{folder.name}.csv")
             if result_summary.is_file():
                 print(f"File {result_summary} already exists. Overwriting...")
 
@@ -74,9 +72,7 @@ def process_results(classifiers: list[str]):
                 # compute average metrics
                 exp_stats = compute_stats(result_file)
 
-                all_stats = pd.concat(
-                    [all_stats, pd.DataFrame(exp_stats)], ignore_index=True
-                )
+                all_stats = pd.concat([all_stats, pd.DataFrame(exp_stats)], ignore_index=True)
 
             # dump average metrics for a dataset into csv file
             all_stats.to_csv(

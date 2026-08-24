@@ -81,10 +81,7 @@ def compose_dataset(dataset_params: dict) -> None:
         for patient in dataset:
             patient_features = []
             # select patients according to the specified sex
-            if (
-                int(patient["sex"]) == dataset_params["sex"]
-                or dataset_params["sex"] is None
-            ):
+            if int(patient["sex"]) == dataset_params["sex"] or dataset_params["sex"] is None:
                 # check specified features and add them to dataset that will be dumped
                 y.append(int(patient["pathology"]))
                 patient_features.append(int(patient["sex"]))
@@ -204,16 +201,12 @@ def main(max_workers: int = 8) -> None:
             }
             configurations.append(dataset_config)
 
-        print(
-            f"Totally {len(configurations)} datasets will be created for sex {sex_of_interest}"
-        )
+        print(f"Totally {len(configurations)} datasets will be created for sex {sex_of_interest}")
 
         # use max_workes possible, according to your CPU, it speeds up set creation significantly
         # i.e. my Ryzen with 12 cores (max_workers=24) creates all datasets in 2 minutes
         # i.e. Intel Core i5 7th gen. with 4 workers took hours to finish.
-        process_map(
-            compose_dataset, configurations, max_workers=max_workers, chunksize=4
-        )
+        process_map(compose_dataset, configurations, max_workers=max_workers, chunksize=4)
 
 
 # pylint: enable=too-many-locals

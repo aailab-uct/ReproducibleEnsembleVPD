@@ -23,19 +23,34 @@ COHORTS = ("women", "men", "both")
 OUTPUT_DIR = Path("results_interpretability")
 
 FEATURE_NAMES = (
-    "sex", "age", "diff_pitch", "mean_f0", "stdev_f0", "hnr", "jitter",
-    "shimmer", "spectral_centroid", "spectral_contrast_1",
-    "spectral_contrast_2", "spectral_contrast_3", "spectral_contrast_4",
-    "spectral_contrast_5", "spectral_contrast_6", "spectral_contrast_7",
-    "spectral_flatness", "spectral_rolloff", "zero_crossing_rate",
-    "shannon_entropy", "skewness",
+    "sex",
+    "age",
+    "diff_pitch",
+    "mean_f0",
+    "stdev_f0",
+    "hnr",
+    "jitter",
+    "shimmer",
+    "spectral_centroid",
+    "spectral_contrast_1",
+    "spectral_contrast_2",
+    "spectral_contrast_3",
+    "spectral_contrast_4",
+    "spectral_contrast_5",
+    "spectral_contrast_6",
+    "spectral_contrast_7",
+    "spectral_flatness",
+    "spectral_rolloff",
+    "zero_crossing_rate",
+    "shannon_entropy",
+    "skewness",
 )
 
 
 def load_hyperparameters(cohort):
     results = pd.read_csv(Path("results_xvalidation", f"voting_{cohort}_top1000_100times.csv"))
     best_index = results["test_uar"].idxmax()
-    hyperparameters: str =  results.loc[best_index, "hyperparameters"] # type: ignore
+    hyperparameters: str = results.loc[best_index, "hyperparameters"]  # type: ignore
     return ast.literal_eval(hyperparameters)
 
 
@@ -61,9 +76,9 @@ def main():
             random_state=SEED,
         )
 
-        for split_index, (train_index, test_index) in tqdm(enumerate(
-            cross_validation.split(features, labels)
-        ), total=N_SPLITS*N_REPEATS):
+        for split_index, (train_index, test_index) in tqdm(
+            enumerate(cross_validation.split(features, labels)), total=N_SPLITS * N_REPEATS
+        ):
             repeat = split_index // N_SPLITS + 1
             fold = split_index % N_SPLITS + 1
             X_train, X_test = features[train_index], features[test_index]
@@ -71,7 +86,6 @@ def main():
 
             pipeline, _ = get_classifier(
                 "voting",
-                both_sexes=cohort == "both",
                 random_seed=SEED,
                 hyperparameters=hyperparameters,
             )
@@ -103,9 +117,7 @@ def main():
                         "feature_index": feature_index,
                         "feature": feature,
                         "importance_mean": importance.importances_mean[feature_index],
-                        "importance_permutation_std": importance.importances_std[
-                            feature_index
-                        ],
+                        "importance_permutation_std": importance.importances_std[feature_index],
                     }
                 )
 
@@ -124,14 +136,11 @@ def main():
                     "voting_balanced_accuracy": balanced_accuracy_score(y_test, voting),
                     "knn_balanced_accuracy": balanced_accuracy_score(y_test, knn),
                     "svm_balanced_accuracy": balanced_accuracy_score(y_test, svm),
-                    "random_forest_balanced_accuracy": balanced_accuracy_score(
-                        y_test, random_forest
-                    ),
+                    "random_forest_balanced_accuracy": balanced_accuracy_score(y_test, random_forest),
                     "knn_svm_agreement_rate": np.mean(knn_svm),
                     "knn_random_forest_agreement_rate": np.mean(knn_rf),
                     "svm_random_forest_agreement_rate": np.mean(svm_rf),
                     "unanimous_rate": np.mean(unanimous),
-                    "disagreement_rate": np.mean(~unanimous),
                     "knn_dissent_rate": np.mean(knn != voting),
                     "svm_dissent_rate": np.mean(svm != voting),
                     "random_forest_dissent_rate": np.mean(random_forest != voting),
@@ -140,9 +149,7 @@ def main():
 
     importance_by_fold = pd.DataFrame(importance_rows)
     importance_summary = (
-        importance_by_fold.groupby(
-            ["cohort", "feature_index", "feature"], sort=False
-        )["importance_mean"]
+        importance_by_fold.groupby(["cohort", "feature_index", "feature"], sort=False)["importance_mean"]
         .agg(
             mean_importance="mean",
             between_fold_std=lambda values: values.std(ddof=0),
@@ -154,9 +161,7 @@ def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     importance_by_fold.to_csv(OUTPUT_DIR / "voting_importance_by_fold.csv", index=False)
     importance_summary.to_csv(OUTPUT_DIR / "voting_importance_summary.csv", index=False)
-    pd.DataFrame(diagnostic_rows).to_csv(
-        OUTPUT_DIR / "voting_diagnostics_by_fold.csv", index=False
-    )
+    pd.DataFrame(diagnostic_rows).to_csv(OUTPUT_DIR / "voting_diagnostics_by_fold.csv", index=False)
 
 
 if __name__ == "__main__":

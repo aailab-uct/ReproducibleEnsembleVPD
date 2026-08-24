@@ -23,8 +23,7 @@ def only_first_each(records: list[Record]) -> list[Record]:
     return [
         record
         for record in records
-        if record.recording_id
-        == oldest_recording_ids[(record.patient_id, record.pathology)]
+        if record.recording_id == oldest_recording_ids[(record.patient_id, record.pathology)]
     ]
 
 
