@@ -47,8 +47,8 @@ FEATURE_NAMES = (
 )
 
 
-def load_hyperparameters(cohort):
-    results = pd.read_csv(Path("results_xvalidation", f"voting_{cohort}_top1000_100times.csv"))
+def load_hyperparameters(cohort, voting_classsifier):
+    results = pd.read_csv(Path("results_xvalidation", f"{voting_classsifier}_{cohort}_top1000_100times.csv"))
     best_index = results["test_uar"].idxmax()
     hyperparameters: str = results.loc[best_index, "hyperparameters"]  # type: ignore
     return ast.literal_eval(hyperparameters)
@@ -63,12 +63,12 @@ def load_dataset(cohort):
     return features, labels
 
 
-def main():
+def main(voting_classsifier = "voting"):
     importance_rows = []
     diagnostic_rows = []
 
     for cohort in COHORTS:
-        hyperparameters = load_hyperparameters(cohort)
+        hyperparameters = load_hyperparameters(cohort,voting_classsifier)
         features, labels = load_dataset(cohort)
         cross_validation = RepeatedStratifiedKFold(
             n_splits=N_SPLITS,
@@ -159,9 +159,9 @@ def main():
     )
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    importance_by_fold.to_csv(OUTPUT_DIR / "voting_importance_by_fold.csv", index=False)
-    importance_summary.to_csv(OUTPUT_DIR / "voting_importance_summary.csv", index=False)
-    pd.DataFrame(diagnostic_rows).to_csv(OUTPUT_DIR / "voting_diagnostics_by_fold.csv", index=False)
+    importance_by_fold.to_csv(OUTPUT_DIR / "{voting_classsifier}_importance_by_fold.csv", index=False)
+    importance_summary.to_csv(OUTPUT_DIR / "{voting_classsifier}_importance_summary.csv", index=False)
+    pd.DataFrame(diagnostic_rows).to_csv(OUTPUT_DIR / "{voting_classsifier}_diagnostics_by_fold.csv", index=False)
 
 
 if __name__ == "__main__":
