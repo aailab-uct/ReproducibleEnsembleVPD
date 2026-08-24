@@ -1,0 +1,2 @@
+name,mean_test_recall_mean,mean_test_recall_std,mean_test_specificity_mean,mean_test_specificity_std,mean_test_uar_mean,mean_test_uar_std
+0,0.80625,0.017319581293155223,0.8249501041666667,0.034819324884530004,0.8156000416666666,0.02492464534155868
