@@ -27,6 +27,7 @@ from src.misc import only_first_each, singers_to_healthy
 from src.record import Record
 from src.svd import get_data as get_svd_data
 
+_list_excluded_f0 = []
 
 def exclude_records(
     records: list[Record],
@@ -192,7 +193,7 @@ def _extract_record_features(record: Record) -> dict[str, Any] | None:
     features["skewness"] = skew(signal)
     features["shannon_entropy"] = sp.entropy(
         signal,
-        alpha=1,  # TODO: reference - stejne jak v JoV
+        alpha=1,
     )
 
     return features
@@ -209,6 +210,7 @@ def feature_extraction() -> Callable[[list[Record]], pd.DataFrame]:
                 tqdm.write(
                     f"Dropping recording {record.datbase}:{record.recording_id}:{record.vowel}: F0 could not be extracted."
                 )
+                _list_excluded_f0.append((record.recording_id,record.pathology))
                 continue
             row = {
                 "database": record.datbase,
@@ -245,7 +247,8 @@ def main() -> None:
     # data visualization
     features["Sex"] = features["sex"].map({0: "Male", 1: "Female"})
     features["Status"] = features["pathology"].map({0: "Healthy", 1: "Pathological"})
-    print(features.head())
+    print(_list_excluded_f0)
+    print(features.groupby(["Sex","Status"])["recording_id"].count())
     g= sns.displot(
         features,
         row="Status",
