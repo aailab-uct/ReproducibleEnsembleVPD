@@ -45,9 +45,7 @@ scoring_dict = {
 
 
 # pylint: disable=too-many-locals
-def repeated_cross_validation_fit(
-    sex: str, dataset_id: str, clf: str, hyper_parameters: dict, n_repeats: int = 100
-):
+def repeated_cross_validation_fit(sex: str, dataset_id: str, clf: str, hyper_parameters: dict, n_repeats: int = 100):
     """
     Function that performs n_repeats times (by default 100x) 10-fold stratified cross-validation for a classifier
     specified by clf with hyperparameters specified by hyper_parameters for a sex and dataset_id.
@@ -71,14 +69,11 @@ def repeated_cross_validation_fit(
     # get classifier and its pipeline specified in classifier_pipeline.py
     pipeline, _ = get_classifier(
         clf,
-        both_sexes=sex == "both",
         random_seed=RANDOM_SEED,
         hyperparameters=hyper_parameters,
     )
     # reproducible stratified k-fold cross validation
-    stratified_kfold = RepeatedStratifiedKFold(
-        n_repeats=n_repeats, n_splits=10, random_state=RANDOM_SEED
-    )
+    stratified_kfold = RepeatedStratifiedKFold(n_repeats=n_repeats, n_splits=10, random_state=RANDOM_SEED)
     validation_n_jobs = -1
     results = cross_validate(
         pipeline,
@@ -103,9 +98,7 @@ def repeated_cross_validation_fit(
 
     # dump results
     results_path.mkdir(parents=True, exist_ok=True)
-    results_file = results_path.joinpath(
-        f"{clf}_{sex}_top{TOP_CLASSIFIERS}_{n_repeats}times.csv"
-    )
+    results_file = results_path.joinpath(f"{clf}_{sex}_top{TOP_CLASSIFIERS}_{n_repeats}times.csv")
     headers = results_average.keys()
     if results_file.is_file():
         header = False
@@ -143,12 +136,8 @@ def main(classifiers: list[str], sexes: list[str]):
                 # iterate over all datasets
                 df = pd.read_csv(csv_path)
                 result_files.append(df)
-                result_files[-1]["data"] = (
-                    csv_path.parent.name
-                )  # store the dataset id in the dataframe
-                result_files[-1]["clf"] = (
-                    classifier  # store the classifier name in the dataframe
-                )
+                result_files[-1]["data"] = csv_path.parent.name  # store the dataset id in the dataframe
+                result_files[-1]["clf"] = classifier  # store the classifier name in the dataframe
             tables[f"{classifier}_{sex}"] = (
                 pd.concat(
                     result_files  #  store the results in the dictionary
@@ -167,12 +156,7 @@ def main(classifiers: list[str], sexes: list[str]):
             classifier = row["clf"]
             print(f"{row['mean_test_uar']} - uar ......... for {classifier}")
 
-            hyper_parameters = json.loads(
-                row["params"]
-                .replace("'", '"')
-                .replace("np.float64(", "")
-                .replace(")", "")
-            )
+            hyper_parameters = json.loads(row["params"].replace("'", '"').replace("np.float64(", "").replace(")", ""))
 
             repeated_cross_validation_fit(
                 sex=sex,

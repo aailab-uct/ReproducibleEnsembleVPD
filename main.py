@@ -41,15 +41,22 @@ def main(classifiers: list[str], sexes: list[str]):
 
     # 6. run svm_repeated_xvalidation.py to evaluate the best classifiers on the best on 10 ten average datasets
     print("-" * 79)
-    print(
-        "Step 6: Running repeated stratified 10 fold cross-validation for top classifiers."
-    )
+    print("Step 6: Running repeated stratified 10 fold cross-validation for top classifiers.")
     repeated_cross_validation_best(classifiers=classifiers, sexes=sexes)
 
 
 if __name__ == "__main__":
     freeze_support()
     main(
-        classifiers=["knn", "svm_rbf", "svm_poly", "random_forest", "voting"],
+        classifiers=[
+            "knn",
+            "svm_rbf",
+            "svm_poly",
+            "random_forest",
+            "adaboost",
+            "voting_rbf",
+            "voting_poly",
+            "voting_adaboost",
+        ],
         sexes=["women", "men", "both"],
     )
