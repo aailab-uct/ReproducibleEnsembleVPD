@@ -51,11 +51,9 @@ if __name__ == "__main__":
         classifiers=[
             "knn",
             "svm_rbf",
-            "svm_poly",
             "random_forest",
             "adaboost",
-            "voting_rbf",
-            "voting_poly",
+            "voting_svm",
             "voting_adaboost",
         ],
         sexes=["women", "men", "both"],

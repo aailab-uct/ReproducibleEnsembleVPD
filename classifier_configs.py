@@ -18,66 +18,45 @@ from sklearn.svm import SVC
 warnings.simplefilter("ignore")
 os.environ["PYTHONWARNINGS"] = "ignore"
 
-ADABOOST_N_EST = [50, 100, 150, 200, 250, 300, 350, 400]
 
 # definition of classifier parameters for search
 grids = {
-    "svm_poly": {
-        "classifier__C": loguniform(0.1, 10000),
-        "classifier__kernel": ["poly"],
-        "classifier__gamma": loguniform(0.001, 1),
-        "classifier__degree": [2, 3, 4, 5, 6],
-    },
     "svm_rbf": {
-        "classifier__C": loguniform(0.1, 10000),
+        "classifier__C": [0.1, 0.3, 1, 3, 10 , 31, 100, 316 , 1000, 3162, 10000, 31622], # logaritmic scale
         "classifier__kernel": ["rbf"],
-        "classifier__gamma": loguniform(0.001, 1),
+        "classifier__gamma": [0.001, 0.01, 0.1, 1, "auto"],
     },
     "knn": {
-        "classifier__n_neighbors": [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23],
+        "classifier__n_neighbors": list(range(1,25+1,2)),
         "classifier__weights": ["uniform", "distance"],
         "classifier__p": [1, 2],
     },
     "random_forest": {
-        "classifier__n_estimators": randint(20, 251),
+        "classifier__n_estimators": list(range(16, 512+1, 16)),
         "classifier__criterion": ["gini"],
-        "classifier__min_samples_split": [2, 3, 4, 5, 6],
+        "classifier__min_samples_split": list(range(1,8+1,1)),
         "classifier__max_features": ["sqrt"],
     },
     "adaboost": {
-        "classifier__n_estimators": ADABOOST_N_EST,
-        "classifier__learning_rate": [0.1, 1, 10],
+        "classifier__n_estimators": list(range(25,500+1,25)),
+        "classifier__learning_rate": [0.001, 0.01, 0.1, 1, 10],
     },
 }
 
 # voting classifiers
 grids |= {
-    "voting_rbf": {
+    "voting_knn": {
         "classifier__voting": ["hard"],
     }
     | {k.replace("__", "__svm__"): v for k, v in grids["svm_rbf"].items()}
     | {k.replace("__", "__knn__"): v for k, v in grids["knn"].items()}
     | {k.replace("__", "__random_forest__"): v for k, v in grids["random_forest"].items()},
-    "voting_poly": {
-        "classifier__voting": ["hard"],
-    }
-    | {k.replace("__", "__svm__"): v for k, v in grids["svm_poly"].items()}
-    | {k.replace("__", "__knn__"): v for k, v in grids["knn"].items()}
-    | {k.replace("__", "__random_forest__"): v for k, v in grids["random_forest"].items()},
-    "voting_adaboost": [
-        {
-            "classifier__voting": ["hard"],
-        }
-        | {k.replace("__", "__svm__"): v for k, v in grids["svm_poly"].items()}
-        | {k.replace("__", "__adaboost__"): v for k, v in grids["adaboost"].items()}
-        | {k.replace("__", "__random_forest__"): v for k, v in grids["random_forest"].items()},
-        {
+    "voting_adaboost": {
             "classifier__voting": ["hard"],
         }
         | {k.replace("__", "__svm__"): v for k, v in grids["svm_rbf"].items()}
         | {k.replace("__", "__adaboost__"): v for k, v in grids["adaboost"].items()}
         | {k.replace("__", "__random_forest__"): v for k, v in grids["random_forest"].items()},
-    ],
 }
 
 
@@ -146,7 +125,7 @@ def get_classifier(
                 ),
             )
 
-        case "voting" | "voting_rbf" | "voting_poly":
+        case "voting_knn":
             classifier = (
                 "classifier",
                 VotingClassifier(

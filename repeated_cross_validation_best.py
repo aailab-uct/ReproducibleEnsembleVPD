@@ -24,7 +24,7 @@ warnings.simplefilter("ignore")
 os.environ["PYTHONWARNINGS"] = "ignore"
 
 # number of classifiers that should be 100x 10-fold cross-validated
-TOP_CLASSIFIERS = 1000
+TOP_CLASSIFIERS = 10
 
 # set random seed to allow reproducibility
 RANDOM_SEED = 42
