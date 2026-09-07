@@ -1,6 +1,6 @@
 """
 This script performs repeated stratified 10-fold cross validation 100 times for the
-best 1000 searched voting classifiers for a combination of dataset and hyperparameters.
+best 1000 searched stacking classifiers for a combination of dataset and hyperparameters.
 """
 
 import csv
@@ -24,10 +24,10 @@ warnings.simplefilter("ignore")
 os.environ["PYTHONWARNINGS"] = "ignore"
 
 # number of classifiers that should be 100x 10-fold cross-validated
-TOP_CLASSIFIERS = 1000
+TOP_CLASSIFIERS = 1
 
 # set random seed to allow reproducibility
-RANDOM_SEED = 42
+RANDOM_SEED = 23 #42
 np.random.seed(RANDOM_SEED)
 
 # speedup
@@ -45,7 +45,7 @@ scoring_dict = {
 
 
 # pylint: disable=too-many-locals
-def repeated_cross_validation_fit(sex: str, dataset_id: str, clf: str, hyper_parameters: dict, n_repeats: int = 100):
+def repeated_cross_validation_fit(sex: str, dataset_id: str, clf: str, hyper_parameters: dict, n_repeats: int = 1000):
     """
     Function that performs n_repeats times (by default 100x) 10-fold stratified cross-validation for a classifier
     specified by clf with hyperparameters specified by hyper_parameters for a sex and dataset_id.
@@ -167,4 +167,7 @@ def main(classifiers: list[str], sexes: list[str]):
 
 
 if __name__ == "__main__":
-    main(classifiers=["random_forest", "voting"], sexes=["women", "men", "both"])
+    main(
+        classifiers=["svm_rbf"],
+        sexes=["women", ],
+    )

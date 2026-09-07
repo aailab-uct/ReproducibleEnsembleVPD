@@ -1,0 +1,2 @@
+dataset,classifier,hyperparameters,test_recall,test_recall_stdev,test_specificity,test_specificity_stdev,test_uar,test_uar_stdev
+0,svm_poly,"{'classifier__C': 5192.614648654096, 'classifier__kernel': 'poly', 'classifier__gamma': 0.04784950033821789, 'classifier__degree': 3}",0.853383,0.035477,0.849765,0.042738,0.851574,0.027824

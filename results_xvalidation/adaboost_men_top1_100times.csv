@@ -1,0 +1,2 @@
+dataset,classifier,hyperparameters,test_recall,test_recall_stdev,test_specificity,test_specificity_stdev,test_uar,test_uar_stdev
+0,adaboost,"{'classifier__n_estimators': 397, 'classifier__learning_rate': 0.1}",0.850153,0.056166,0.785671,0.082596,0.817912,0.048262

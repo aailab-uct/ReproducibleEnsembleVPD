@@ -49,14 +49,10 @@ if __name__ == "__main__":
     freeze_support()
     main(
         classifiers=[
-            "knn",
-            "svm_rbf",
-            "svm_poly",
-            "random_forest",
-            "adaboost",
-            "voting_rbf",
-            "voting_poly",
-            "voting_adaboost",
+            "stacking_rbf",
+            "stacking_poly",
+            "stacking_adaboost",
+            "knn","svm_rbf","svm_poly","random_forest","adaboost",
         ],
-        sexes=["women", "men", "both"],
+        sexes=["women","both", "men"],
     )

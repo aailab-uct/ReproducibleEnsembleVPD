@@ -8,9 +8,12 @@ from scipy.stats import loguniform, randint
 from sklearn.ensemble import (
     AdaBoostClassifier,
     RandomForestClassifier,
-    VotingClassifier,
+    StackingClassifier,
 )
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import StratifiedKFold
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import Pipeline as SklearnPipeline
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.svm import SVC
 
@@ -45,40 +48,57 @@ grids = {
         "classifier__max_features": ["sqrt"],
     },
     "adaboost": {
-        "classifier__n_estimators": ADABOOST_N_EST,
+        "classifier__n_estimators": randint(40, 401),
         "classifier__learning_rate": [0.1, 1, 10],
     },
 }
 
-# voting classifiers
+# stacking classifiers
 grids |= {
-    "voting_rbf": {
-        "classifier__voting": ["hard"],
-    }
-    | {k.replace("__", "__svm__"): v for k, v in grids["svm_rbf"].items()}
-    | {k.replace("__", "__knn__"): v for k, v in grids["knn"].items()}
-    | {k.replace("__", "__random_forest__"): v for k, v in grids["random_forest"].items()},
-    "voting_poly": {
-        "classifier__voting": ["hard"],
-    }
-    | {k.replace("__", "__svm__"): v for k, v in grids["svm_poly"].items()}
-    | {k.replace("__", "__knn__"): v for k, v in grids["knn"].items()}
-    | {k.replace("__", "__random_forest__"): v for k, v in grids["random_forest"].items()},
-    "voting_adaboost": [
+    "stacking": {k.replace("classifier__", "classifier__svm__model__"): v for k, v in grids["svm_rbf"].items()}
+    | {k.replace("classifier__", "classifier__knn__model__"): v for k, v in grids["knn"].items()}
+    | {k.replace("classifier__", "classifier__random_forest__"): v for k, v in grids["random_forest"].items()},
+    "stacking_rbf": {k.replace("classifier__", "classifier__svm__model__"): v for k, v in grids["svm_rbf"].items()}
+    | {k.replace("classifier__", "classifier__knn__model__"): v for k, v in grids["knn"].items()}
+    | {k.replace("classifier__", "classifier__random_forest__"): v for k, v in grids["random_forest"].items()},
+    "stacking_poly": {k.replace("classifier__", "classifier__svm__model__"): v for k, v in grids["svm_poly"].items()}
+    | {k.replace("classifier__", "classifier__knn__model__"): v for k, v in grids["knn"].items()}
+    | {k.replace("classifier__", "classifier__random_forest__"): v for k, v in grids["random_forest"].items()},
+    "stacking_adaboost": [
         {
-            "classifier__voting": ["hard"],
-        }
-        | {k.replace("__", "__svm__"): v for k, v in grids["svm_poly"].items()}
-        | {k.replace("__", "__adaboost__"): v for k, v in grids["adaboost"].items()}
-        | {k.replace("__", "__random_forest__"): v for k, v in grids["random_forest"].items()},
+            **{k.replace("classifier__", "classifier__svm__model__"): v for k, v in grids["svm_poly"].items()},
+            **{k.replace("classifier__", "classifier__adaboost__"): v for k, v in grids["adaboost"].items()},
+            **{k.replace("classifier__", "classifier__random_forest__"): v for k, v in grids["random_forest"].items()},
+        },
         {
-            "classifier__voting": ["hard"],
-        }
-        | {k.replace("__", "__svm__"): v for k, v in grids["svm_rbf"].items()}
-        | {k.replace("__", "__adaboost__"): v for k, v in grids["adaboost"].items()}
-        | {k.replace("__", "__random_forest__"): v for k, v in grids["random_forest"].items()},
+            **{k.replace("classifier__", "classifier__svm__model__"): v for k, v in grids["svm_rbf"].items()},
+            **{k.replace("classifier__", "classifier__adaboost__"): v for k, v in grids["adaboost"].items()},
+            **{k.replace("classifier__", "classifier__random_forest__"): v for k, v in grids["random_forest"].items()},
+        },
     ],
 }
+
+
+def _get_scaled_model(estimator):
+    return SklearnPipeline(
+        [
+            ("minmaxscaler", MinMaxScaler()),
+            ("model", estimator),
+        ]
+    )
+
+
+def _get_stacking_classifier(random_seed: int, estimators: list[tuple[str, object]]):
+    return StackingClassifier(
+        estimators=estimators,
+        final_estimator=LogisticRegression(
+            class_weight="balanced",
+            max_iter=5000,
+            random_state=random_seed,
+        ),
+        cv=StratifiedKFold(n_splits=10, shuffle=True, random_state=random_seed),
+        n_jobs=-1,
+    )
 
 
 def get_classifier(
@@ -90,7 +110,7 @@ def get_classifier(
     Get classifier with the given name.
     :param classifier_name: str, name of the classifier
     currently supported: "svm_poly", "svm_rbf", "knn", "gauss_nb", "random_forest",
-    "adaboost", "decisiontree", "voting"
+    "adaboost", "decisiontree", "stacking"
     :param random_seed: int, random seed
     :param hyperparameters: dict, hyperparameters if already known (for repeated cross-validation)
     default: None
@@ -146,20 +166,23 @@ def get_classifier(
                 ),
             )
 
-        case "voting" | "voting_rbf" | "voting_poly":
+        case "stacking" | "stacking_rbf" | "stacking_poly":
             classifier = (
                 "classifier",
-                VotingClassifier(
+                _get_stacking_classifier(
+                    random_seed=random_seed,
                     estimators=[
                         (
                             "svm",
-                            SVC(
-                                max_iter=int(5e5),
-                                random_state=random_seed,
-                                class_weight="balanced",
+                            _get_scaled_model(
+                                SVC(
+                                    max_iter=int(5e5),
+                                    random_state=random_seed,
+                                    class_weight="balanced",
+                                )
                             ),
                         ),
-                        ("knn", KNeighborsClassifier(n_jobs=1)),
+                        ("knn", _get_scaled_model(KNeighborsClassifier(n_jobs=1))),
                         (
                             "random_forest",
                             RandomForestClassifier(
@@ -169,21 +192,22 @@ def get_classifier(
                             ),
                         ),
                     ],
-                    n_jobs=-1,
-                    #                    **processed_hyperparameters
                 ),
             )
-        case "voting_adaboost":
+        case "stacking_adaboost":
             classifier = (
                 "classifier",
-                VotingClassifier(
+                _get_stacking_classifier(
+                    random_seed=random_seed,
                     estimators=[
                         (
                             "svm",
-                            SVC(
-                                max_iter=int(5e5),
-                                random_state=random_seed,
-                                class_weight="balanced",
+                            _get_scaled_model(
+                                SVC(
+                                    max_iter=int(5e5),
+                                    random_state=random_seed,
+                                    class_weight="balanced",
+                                )
                             ),
                         ),
                         (
@@ -199,14 +223,15 @@ def get_classifier(
                             ),
                         ),
                     ],
-                    n_jobs=-1,
-                    #                    **processed_hyperparameters
                 ),
             )
         case _:
             raise ValueError(f"Unknown classifier: {classifier_name}")
 
-    pipe = Pipeline([("minmaxscaler", MinMaxScaler()), classifier])
+    if classifier_name.startswith("stacking"):
+        pipe = Pipeline([classifier])
+    else:
+        pipe = Pipeline([("minmaxscaler", MinMaxScaler()), classifier])
     if hyperparameters is not None:
         pipe.set_params(**hyperparameters)
     return pipe, grids[classifier_name]

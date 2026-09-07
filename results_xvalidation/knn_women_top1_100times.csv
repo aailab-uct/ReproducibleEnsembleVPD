@@ -1,0 +1,2 @@
+dataset,classifier,hyperparameters,test_recall,test_recall_stdev,test_specificity,test_specificity_stdev,test_uar,test_uar_stdev
+0,knn,"{'classifier__n_neighbors': 15, 'classifier__weights': 'uniform', 'classifier__p': 2}",0.814129,0.050838,0.855386,0.054701,0.834757,0.037406

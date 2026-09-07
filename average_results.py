@@ -87,4 +87,4 @@ def process_results(classifiers: list[str]):
 
 
 if __name__ == "__main__":
-    process_results(classifiers=["voting"])
+    process_results(classifiers=["stacking_rbf", "stacking_poly", "stacking_adaboost"])
