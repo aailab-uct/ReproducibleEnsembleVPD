@@ -15,6 +15,7 @@ import numpy as np
 import optuna
 import pandas as pd
 import sklearn
+from imblearn.pipeline import Pipeline
 from sklearn.metrics import balanced_accuracy_score, make_scorer, recall_score
 from sklearn.model_selection import StratifiedKFold, cross_validate
 
@@ -25,7 +26,7 @@ warnings.simplefilter("ignore")
 os.environ["PYTHONWARNINGS"] = "ignore"
 
 # setup random seed to make code reproducible
-RANDOM_SEED = 23 
+RANDOM_SEED = 23
 np.random.seed(RANDOM_SEED)
 N_OPTUNA_TRIALS = 1000
 
@@ -47,7 +48,7 @@ scoring_dict = {
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 
-def format_seconds(seconds: float) -> str:
+def format_time(seconds: float) -> str:
     total_seconds = max(0, round(seconds))
     hours, remainder = divmod(total_seconds, 3600)
     minutes, secs = divmod(remainder, 60)
@@ -58,20 +59,15 @@ def format_seconds(seconds: float) -> str:
     return f"{secs:d}s"
 
 
-def suggest_parameter(trial: optuna.Trial, name: str, distribution):
+def suggest_parameter(trial: optuna.Trial, name: str, distribution: list | dict):
     """Bridge the existing sklearn/scipy parameter space to Optuna suggestions."""
     if isinstance(distribution, list):
         return trial.suggest_categorical(name, distribution)
-
-    if hasattr(distribution, "dist") and hasattr(distribution, "args"):
-        if distribution.dist.name == "randint":
-            low, high = distribution.args
-            return trial.suggest_int(name, int(low), int(high) - 1)
-        if distribution.dist.name in {"reciprocal", "loguniform"}:
-            low, high = distribution.args
-            return trial.suggest_float(name, float(low), float(high), log=True)
-
-    raise TypeError(f"Unsupported parameter distribution for {name}: {distribution!r}")
+    else:
+        number = trial.suggest_float(name, **distribution)
+        if distribution.get("step", -1) == 1:
+            number = int(number)
+        return number
 
 
 def suggest_hyperparameters(trial: optuna.Trial, param_grid: dict | list[dict]):
@@ -93,6 +89,7 @@ def suggest_hyperparameters(trial: optuna.Trial, param_grid: dict | list[dict]):
 def run_optuna_search(
     X: np.ndarray,
     y: np.ndarray,
+    pipeline: Pipeline,
     classifier: str,
     param_grid: dict | list[dict],
     cross_validation: StratifiedKFold,
@@ -106,7 +103,7 @@ def run_optuna_search(
 
     def objective(trial: optuna.Trial):
         params = suggest_hyperparameters(trial, param_grid)
-        pipeline, _ = get_classifier(classifier, random_seed=RANDOM_SEED)
+        print(params)
         pipeline.set_params(**params)
         scores = cross_validate(
             pipeline,
@@ -131,9 +128,9 @@ def run_optuna_search(
         eta_seconds = remaining_fits * seconds_per_fit
         sys.stdout.write(
             f"\r{progress_label}: {fits_completed}/{total_fits} fits completed"
-            f" | elapsed {format_seconds(elapsed_seconds)}"
+            f" | elapsed {format_time(elapsed_seconds)}"
             f" | avg {seconds_per_fit:.2f}s/fit"
-            f" | ETA {format_seconds(eta_seconds)}"
+            f" | ETA {format_time(eta_seconds)}"
         )
         sys.stdout.flush()
         return result_row["mean_test_uar"]
@@ -142,105 +139,60 @@ def run_optuna_search(
         direction="maximize",
         sampler=optuna.samplers.TPESampler(seed=RANDOM_SEED),
     )
-    study.optimize(objective, n_trials=N_OPTUNA_TRIALS, n_jobs=1, show_progress_bar=False)
+    study.optimize(
+        objective, n_trials=N_OPTUNA_TRIALS, n_jobs=1, show_progress_bar=False
+    )
     sys.stdout.write("\n")
     sys.stdout.flush()
     return pd.DataFrame(trial_rows)
 
 
-def get_datasets_to_process(datasets_path: Path, results_data: Path, dataset_slice: tuple | int | None = None):
-    """
-    Get datasets that were not evaluated.
-    :param datasets_path: Path, path to training datasets
-    :param results_data: Path, path to results folder (used to check which datasets were already evaluated)
-    :param dataset_slice: int, slice of datasets to evaluate. If None all datasets will be evaluated.
-    If tuple, slice will be used, e.g. (10, 100). If int, first n datasets will be evaluated.
-    :return: list of datasets to evaluate
-    """
-    # get all datasets in training_data
-    td = sorted([str(x.name) for x in datasets_path.iterdir()])
-    if isinstance(dataset_slice, tuple):
-        td = list(td)[dataset_slice[0] : dataset_slice[1]]
-    elif isinstance(dataset_slice, int):
-        td = list(td)[:dataset_slice]
-
-    # Only treat a dataset as processed once it actually has a non-empty results.csv.
-    tr = []
-    for result_dir in results_data.iterdir():
-        result_file = result_dir / "results.csv"
-        if result_file.is_file() and result_file.stat().st_size > 0:
-            tr.append(str(result_dir.name))
-    # only evaluate datasets that were not processed so far
-    to_do = sorted(set(td) - set(tr))
-
-    return to_do
-
-
-# pylint: disable=too-many-locals
-
-
-def main(sex: str = "women", classifier="stacking_rbf", dataset_slice=None):
+def main(sex: str = "women", classifier_str="stacking_adaboost"):
     """
     Main function for the classifier pipeline.
 
     :param sex: The sex for which the classifier is trained. Default is "women".
-    :param classifier: The type of classifier to use. Default is "stacking_rbf".
-    :param dataset_slice: The slice of the dataset to process. Default is None.
+    :param classifier: The type of classifier to use. Default is "stacking_adaboost".
     """
     # setup paths to training data and results
-    training_data = Path(".").joinpath("training_data", sex)
-    results_data = Path(".").joinpath("results", classifier, sex)
+    training_data = Path(".").joinpath("training_data", sex, "0")
+    results_data = Path(".").joinpath("results", classifier_str, sex, "0")
     results_data.mkdir(exist_ok=True, parents=True)
 
-    # get datasets to be evaluated
-    dataset = get_datasets_to_process(training_data, results_data, dataset_slice)
-    dataset = sorted(dataset)
-    if not dataset:
-        print(f"No pending datasets for {classifier} on {sex}.")
+    # load dataset
+    with open(training_data.joinpath("dataset.pk"), "rb") as f:
+        train_set = pickle.load(f)
+    dataset = {
+        "X": np.array(train_set["data"], dtype=np.float64),
+        "y": np.array(train_set["labels"]),
+    }
 
-    for training_dataset_str in dataset:
-        results_file = results_data.joinpath(str(training_dataset_str))
-        # path to training dataset
-        training_dataset = training_data.joinpath(training_dataset_str)
-        # load dataset
-        with open(training_data.joinpath(str(training_dataset.name), "dataset.pk"), "rb") as f:
-            train_set = pickle.load(f)
-        dataset = {
-            "X": np.array(train_set["data"], dtype=np.float64),
-            "y": np.array(train_set["labels"]),
-        }
-        # Stacking models encapsulate scaling inside the base learners that need it,
-        # which keeps the stacker's internal CV from seeing globally scaled data.
-        pipeline, param_grid = get_classifier(classifier, random_seed=RANDOM_SEED)
-        cross_validation = StratifiedKFold(n_splits=10, shuffle=True, random_state=RANDOM_SEED)
-        total_fits = N_OPTUNA_TRIALS * cross_validation.get_n_splits()
-        print(f"Starting {classifier} TPE search for {training_dataset.name}: {total_fits} fits total.")
-        search_results = run_optuna_search(
-            X=dataset["X"],
-            y=dataset["y"],
-            classifier=classifier,
-            param_grid=param_grid,
-            cross_validation=cross_validation,
-        )
-        # create folder with the training_dataset name to store results
-        results_file.mkdir(parents=True, exist_ok=True)
-        # no need to write header again and again and again,...
-        if results_file.joinpath("results.csv").exists():
-            header = False
-        else:
-            header = True
+    pipeline, param_grid = get_classifier(classifier_str, random_seed=RANDOM_SEED)
+    cross_validation = StratifiedKFold(
+        n_splits=10, shuffle=True, random_state=RANDOM_SEED
+    )
+    total_fits = N_OPTUNA_TRIALS * cross_validation.get_n_splits()
+    print(f"Starting {classifier_str} TPE search for {sex}: {total_fits} fits total.")
+    search_results = run_optuna_search(
+        X=dataset["X"],
+        y=dataset["y"],
+        pipeline=pipeline,
+        classifier=classifier_str,
+        param_grid=param_grid,
+        cross_validation=cross_validation,
+    )
 
-        # dump Optuna search results to results.csv
-        search_results.round(6)[
-            ["params", "mean_test_recall", "mean_test_specificity", "mean_test_uar"]
-        ].to_csv(
-            results_file.joinpath("results.csv"),
-            index=False,
-            mode="a",
-            header=header,
-            encoding="utf8",
-            lineterminator="\n",
-        )
+    # dump Optuna search results to results.csv
+    search_results.round(6)[
+        ["params", "mean_test_recall", "mean_test_specificity", "mean_test_uar"]
+    ].to_csv(
+        results_data.joinpath("results.csv"),
+        index=False,
+        mode="w",
+        header=True,
+        encoding="utf8",
+        lineterminator="\n",
+    )
 
 
 # pylint: enable=too-many-locals
@@ -254,9 +206,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("classifier", type=str)
     parser.add_argument("sex", type=str)
-    parser.add_argument("--test", action="store_true")
     args = parser.parse_args()
     sex_to_compute = args.sex
     used_classifier = args.classifier
-    data_slice = None if not args.test else 50
-    main(sex_to_compute, used_classifier, data_slice)
+    main(sex_to_compute, used_classifier)

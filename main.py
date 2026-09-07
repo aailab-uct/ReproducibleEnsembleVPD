@@ -24,15 +24,15 @@ MAX_WORKERS = 24
 
 def main(classifiers: list[str], sexes: list[str]):
     print("Make features")
-    feature_maker()
+    #feature_maker()
     print("Generate datasets")
-    datasets_generator(max_workers=MAX_WORKERS)
+    #datasets_generator(max_workers=MAX_WORKERS)
 
     # 4. run classifier_pipeline.py
     for sex in sexes:
         for classifier in classifiers:
             print(f"Running {classifier} on {sex} dataset.")
-            classifier_pipeline(sex=sex, classifier=classifier)
+            classifier_pipeline(sex=sex, classifier_str=classifier)
 
     # 5. run average_results.py to get the best datasets according to average performance of classifiers
     print("-" * 79)
@@ -49,10 +49,7 @@ if __name__ == "__main__":
     freeze_support()
     main(
         classifiers=[
-            "stacking_rbf",
-            "stacking_poly",
-            "stacking_adaboost",
-            "knn","svm_rbf","svm_poly","random_forest","adaboost",
+            "stacking_adaboost","svm_rbf","svm_poly","random_forest","adaboost",
         ],
         sexes=["women","both", "men"],
     )

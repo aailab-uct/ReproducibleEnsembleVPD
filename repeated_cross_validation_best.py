@@ -27,7 +27,7 @@ os.environ["PYTHONWARNINGS"] = "ignore"
 TOP_CLASSIFIERS = 1
 
 # set random seed to allow reproducibility
-RANDOM_SEED = 23 #42
+RANDOM_SEED = 42
 np.random.seed(RANDOM_SEED)
 
 # speedup
