@@ -1,14 +1,3 @@
-"""Evaluate held-out permutation importance of the highest-UAR model per group.
-
-Run: python evaluate_best_feature_importance.py
-Replot saved summaries: python evaluate_best_feature_importance.py --plots-only
-Ranked plots are saved as PNG and PDF alongside the CSV summaries.
-Importance is the decrease in UAR (balanced accuracy), in units of 0--1.
-Negative values are retained. Summary standard deviations describe variation
-between fold means, not confidence intervals. Selection uses existing CV results;
-these analyses are conditional on that selection, not an independent assessment.
-"""
-
 import ast
 import pickle
 from pathlib import Path
@@ -103,7 +92,7 @@ def evaluate_model(classifier, parameters, data, sex):
                 {
                     "classifier": classifier,
                     "sex": sex,
-                    "repeat": split // N_REPEATS + 1,
+                    "repeat": split // N_SPLITS + 1,
                     "fold": split % N_SPLITS + 1,
                     "held_out_rows": len(test),
                     "baseline_uar": baseline,
