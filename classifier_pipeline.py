@@ -26,7 +26,7 @@ warnings.simplefilter("ignore")
 os.environ["PYTHONWARNINGS"] = "ignore"
 
 # setup random seed to make code reproducible
-RANDOM_SEED = 23
+RANDOM_SEED = 42
 np.random.seed(RANDOM_SEED)
 N_OPTUNA_TRIALS = 1000
 

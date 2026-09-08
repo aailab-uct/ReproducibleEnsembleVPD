@@ -1,2 +1,0 @@
-dataset,classifier,hyperparameters,test_recall,test_recall_stdev,test_specificity,test_specificity_stdev,test_uar,test_uar_stdev
-0,svm_rbf,"{'classifier__C': 5.995985669775699, 'classifier__kernel': 'rbf', 'classifier__gamma': 0.8614102075546919}",0.86321,0.044786,0.848674,0.055508,0.855942,0.035228

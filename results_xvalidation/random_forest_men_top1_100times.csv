@@ -1,2 +1,0 @@
-dataset,classifier,hyperparameters,test_recall,test_recall_stdev,test_specificity,test_specificity_stdev,test_uar,test_uar_stdev
-0,random_forest,"{'classifier__n_estimators': 243, 'classifier__criterion': 'gini', 'classifier__min_samples_split': 4, 'classifier__max_features': 'sqrt'}",0.82351,0.057614,0.850529,0.069909,0.837019,0.045541

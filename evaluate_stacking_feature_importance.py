@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 from classifier_configs import get_classifier
 
-SEED = 23
+SEED = 42
 N_SPLITS = 10
 N_REPEATS = 10
 N_PERMUTATIONS = 20
