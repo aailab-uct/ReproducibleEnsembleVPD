@@ -139,9 +139,7 @@ def run_optuna_search(
         direction="maximize",
         sampler=optuna.samplers.TPESampler(seed=RANDOM_SEED),
     )
-    study.optimize(
-        objective, n_trials=N_OPTUNA_TRIALS, n_jobs=1, show_progress_bar=False
-    )
+    study.optimize(objective, n_trials=N_OPTUNA_TRIALS, n_jobs=1, show_progress_bar=False)
     sys.stdout.write("\n")
     sys.stdout.flush()
     return pd.DataFrame(trial_rows)
@@ -162,15 +160,17 @@ def main(sex: str = "women", classifier_str="stacking_adaboost"):
     # load dataset
     with open(training_data.joinpath("dataset.pk"), "rb") as f:
         train_set = pickle.load(f)
+    X = np.array(train_set["data"], dtype=np.float64)
+    if sex != "both":
+        assert np.all(X[:, 0] == X[0, 0]), "First row is not sex"
+        X = X[:, 1:]
     dataset = {
-        "X": np.array(train_set["data"], dtype=np.float64),
+        "X": X.copy(),
         "y": np.array(train_set["labels"]),
     }
 
     pipeline, param_grid = get_classifier(classifier_str, random_seed=RANDOM_SEED)
-    cross_validation = StratifiedKFold(
-        n_splits=10, shuffle=True, random_state=RANDOM_SEED
-    )
+    cross_validation = StratifiedKFold(n_splits=10, shuffle=True, random_state=RANDOM_SEED)
     total_fits = N_OPTUNA_TRIALS * cross_validation.get_n_splits()
     print(f"Starting {classifier_str} TPE search for {sex}: {total_fits} fits total.")
     search_results = run_optuna_search(
@@ -183,9 +183,7 @@ def main(sex: str = "women", classifier_str="stacking_adaboost"):
     )
 
     # dump Optuna search results to results.csv
-    search_results.round(6)[
-        ["params", "mean_test_recall", "mean_test_specificity", "mean_test_uar"]
-    ].to_csv(
+    search_results.round(6)[["params", "mean_test_recall", "mean_test_specificity", "mean_test_uar"]].to_csv(
         results_data.joinpath("results.csv"),
         index=False,
         mode="w",

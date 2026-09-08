@@ -66,6 +66,10 @@ def repeated_cross_validation_fit(sex: str, dataset_id: str, clf: str, hyper_par
     X = np.array(train_set["data"], dtype=np.float64)
     y = np.array(train_set["labels"])
 
+    if sex != "both":
+        assert np.all(X[:, 0] == X[0, 0]), "First row is not sex"
+        X = X[:, 1:]
+
     # get classifier and its pipeline specified in classifier_pipeline.py
     pipeline, _ = get_classifier(
         clf,
@@ -168,6 +172,12 @@ def main(classifiers: list[str], sexes: list[str]):
 
 if __name__ == "__main__":
     main(
-        classifiers=["svm_rbf"],
-        sexes=["women", ],
+        classifiers=[
+            "stacking_adaboost",
+            "svm_rbf",
+            "svm_poly",
+            "random_forest",
+            "adaboost",
+        ],
+        sexes=["women", "both", "men"],
     )

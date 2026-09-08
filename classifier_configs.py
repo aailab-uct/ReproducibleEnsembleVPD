@@ -58,28 +58,16 @@ grids = {
 grids |= {
     "stacking_adaboost": [
         {
-            **{
-                k.replace("classifier__", "classifier__svm__model__"): v
-                for k, v in grids["svm_poly"].items()
-            },
-            **{
-                k.replace("classifier__", "classifier__adaboost__model__"): v
-                for k, v in grids["adaboost"].items()
-            },
+            **{k.replace("classifier__", "classifier__svm__model__"): v for k, v in grids["svm_poly"].items()},
+            **{k.replace("classifier__", "classifier__adaboost__model__"): v for k, v in grids["adaboost"].items()},
             **{
                 k.replace("classifier__", "classifier__random_forest__model__"): v
                 for k, v in grids["random_forest"].items()
             },
         },
         {
-            **{
-                k.replace("classifier__", "classifier__svm__model__"): v
-                for k, v in grids["svm_rbf"].items()
-            },
-            **{
-                k.replace("classifier__", "classifier__adaboost__model__"): v
-                for k, v in grids["adaboost"].items()
-            },
+            **{k.replace("classifier__", "classifier__svm__model__"): v for k, v in grids["svm_rbf"].items()},
+            **{k.replace("classifier__", "classifier__adaboost__model__"): v for k, v in grids["adaboost"].items()},
             **{
                 k.replace("classifier__", "classifier__random_forest__model__"): v
                 for k, v in grids["random_forest"].items()
@@ -166,9 +154,7 @@ def get_classifier(
                         ),
                         (
                             "adaboost",
-                            _get_scaled_model(
-                                AdaBoostClassifier(random_state=random_seed)
-                            ),
+                            _get_scaled_model(AdaBoostClassifier(random_state=random_seed)),
                         ),
                         (
                             "random_forest",
@@ -186,9 +172,7 @@ def get_classifier(
                         max_iter=5000,
                         random_state=random_seed,
                     ),
-                    cv=StratifiedKFold(
-                        n_splits=10, shuffle=True, random_state=random_seed
-                    ),
+                    cv=StratifiedKFold(n_splits=10, shuffle=True, random_state=random_seed),
                     n_jobs=-1,
                 ),
             )
