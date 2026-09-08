@@ -98,7 +98,6 @@ def evaluate_model(classifier, parameters, data, sex):
             n_jobs=-1,
         )
 
-
         frames.append(
             pd.DataFrame(
                 {
@@ -109,8 +108,8 @@ def evaluate_model(classifier, parameters, data, sex):
                     "held_out_rows": len(test),
                     "baseline_uar": baseline,
                     "feature_name": feat_names,
-                    "importances_mean":importance["importances_mean"],
-                    "importances_std":importance["importances_std"],
+                    "importances_mean": importance["importances_mean"],
+                    "importances_std": importance["importances_std"],
                 }
             )
         )
@@ -158,6 +157,10 @@ def main() -> None:
         settings = pd.concat([settings, current])
     print(settings[["sex", "classifier", "test_uar"]].to_string(index=False), flush=True)
 
+    settings = settings[
+        settings["test_uar"] == settings.groupby("sex")["test_uar"].transform("max")
+    ]
+
     all_folds_importances = pd.DataFrame()
     summary_importances = pd.DataFrame()
 
@@ -171,13 +174,11 @@ def main() -> None:
         parameters = ast.literal_eval(row["hyperparameters"])
         by_fold = evaluate_model(row["classifier"], parameters, data, row["sex"])
 
-        all_folds_importances = pd.concat([all_folds_importances,by_fold])
+        all_folds_importances = pd.concat([all_folds_importances, by_fold])
         print(all_folds_importances)
 
         summary = (
-            by_fold.groupby(["sex", "classifier", "feature_name"], sort=False)[
-                "importances_mean"
-            ]
+            by_fold.groupby(["sex", "classifier", "feature_name"], sort=False)["importances_mean"]
             .agg(
                 mean_importance="mean",
                 between_fold_std=lambda values: values.std(ddof=0),
@@ -190,10 +191,8 @@ def main() -> None:
 
         plot_importance(summary, OUTPUT_FOLDER)
 
-    summary_importances.to_csv(OUTPUT_FOLDER/"summary_importances.csv")
-    all_folds_importances.to_csv(OUTPUT_FOLDER/"all_folds_importances.csv")
-
-
+    summary_importances.to_csv(OUTPUT_FOLDER / "summary_importances.csv")
+    all_folds_importances.to_csv(OUTPUT_FOLDER / "all_folds_importances.csv")
 
 
 if __name__ == "__main__":
