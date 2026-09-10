@@ -179,7 +179,10 @@ def get_classifier(
         case _:
             raise ValueError(f"Unknown classifier: {classifier_name}")
 
-    pipe = Pipeline([("minmaxscaler", MinMaxScaler()), classifier])
+    if "stacking" not in classifier_name:
+        pipe = Pipeline([("minmaxscaler", MinMaxScaler()), classifier])
+    else:
+        pipe = Pipeline([classifier])
 
     if hyperparameters is not None:
         pipe.set_params(**hyperparameters)
