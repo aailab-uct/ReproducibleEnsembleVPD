@@ -26,7 +26,7 @@ def main(classifiers: list[str], sexes: list[str]):
     print("Make features")
     # feature_maker()
     print("Generate datasets")
-    # datasets_generator(max_workers=MAX_WORKERS)
+    datasets_generator(max_workers=MAX_WORKERS)
 
     # 4. run classifier_pipeline.py
     for sex in sexes:
@@ -40,9 +40,9 @@ def main(classifiers: list[str], sexes: list[str]):
     process_results(classifiers)
 
     # 6. run svm_repeated_xvalidation.py to evaluate the best classifiers on the best on 10 ten average datasets
-    print("-" * 79)
-    print("Step 6: Running repeated stratified 10 fold cross-validation for top classifiers.")
-    repeated_cross_validation_best(classifiers=classifiers, sexes=sexes)
+    # print("-" * 79)
+    # print("Step 6: Running repeated stratified 10 fold cross-validation for top classifiers.")
+    # repeated_cross_validation_best(classifiers=classifiers, sexes=sexes)
 
 
 if __name__ == "__main__":

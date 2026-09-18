@@ -1,6 +1,6 @@
 """
-Script that performs Optuna TPE search for classifiers across various datasets.
-Datasets are evaluated via stratified 10-fold cross-validation.
+Evaluate classifiers with nested stratified cross-validation and Optuna TPE.
+The outer loop uses 10 folds; inner searches use 10 repetitions of 10 folds.
 """
 
 import argparse
@@ -16,8 +16,9 @@ import optuna
 import pandas as pd
 import sklearn
 from imblearn.pipeline import Pipeline
+from sklearn.base import clone
 from sklearn.metrics import balanced_accuracy_score, make_scorer, recall_score
-from sklearn.model_selection import StratifiedKFold, cross_validate
+from sklearn.model_selection import RepeatedStratifiedKFold, StratifiedKFold, cross_validate
 
 from classifier_configs import get_classifier
 
@@ -29,6 +30,9 @@ os.environ["PYTHONWARNINGS"] = "ignore"
 RANDOM_SEED = 42
 np.random.seed(RANDOM_SEED)
 N_OPTUNA_TRIALS = 1000
+N_OUTER_SPLITS = 5
+N_INNER_SPLITS = 5
+N_INNER_REPEATS = 10
 
 
 # speedup
@@ -92,7 +96,7 @@ def run_optuna_search(
     pipeline: Pipeline,
     classifier: str,
     param_grid: dict | list[dict],
-    cross_validation: StratifiedKFold,
+    cross_validation: RepeatedStratifiedKFold,
 ):
     """Run an Optuna TPE search and return rows compatible with the existing results.csv format."""
     progress_label = f"{classifier} TPE search"
@@ -104,9 +108,9 @@ def run_optuna_search(
     def objective(trial: optuna.Trial):
         params = suggest_hyperparameters(trial, param_grid)
         print(params)
-        pipeline.set_params(**params)
+        candidate = clone(pipeline).set_params(**params)
         scores = cross_validate(
-            pipeline,
+            candidate,
             X=X,
             y=y,
             scoring=scoring_dict,
@@ -145,6 +149,50 @@ def run_optuna_search(
     return pd.DataFrame(trial_rows)
 
 
+def run_nested_cross_validation(X, y, pipeline, classifier, param_grid, results_data):
+    """Tune only on outer training folds and save independent held-out scores.
+
+    results.csv retains the existing metric columns, with one row per outer
+    fold in split order. Inner trial scores are saved separately for inspection.
+    """
+    outer_cv = StratifiedKFold(
+        n_splits=N_OUTER_SPLITS, shuffle=True, random_state=RANDOM_SEED
+    )
+    outer_rows = []
+    for fold, (train_indices, test_indices) in enumerate(outer_cv.split(X, y), start=1):
+        X_train, y_train = X[train_indices], y[train_indices]
+        inner_cv = RepeatedStratifiedKFold(
+            n_splits=N_INNER_SPLITS,
+            n_repeats=N_INNER_REPEATS,
+            random_state=RANDOM_SEED,
+        )
+        search_results = run_optuna_search(
+            X=X_train,
+            y=y_train,
+            pipeline=pipeline,
+            classifier=f"{classifier} outer fold {fold}/{N_OUTER_SPLITS}",
+            param_grid=param_grid,
+            cross_validation=inner_cv,
+        )
+        search_results.to_csv(results_data / f"inner_results_fold_{fold}.csv", index=False)
+        valid_results = search_results[np.isfinite(search_results["mean_test_uar"])]
+        if valid_results.empty:
+            raise ValueError(f"No valid Optuna trials in outer fold {fold}.")
+        best_params = valid_results.loc[valid_results["mean_test_uar"].idxmax(), "params"]
+        best_pipeline = clone(pipeline).set_params(**best_params)
+        best_pipeline.fit(X_train, y_train)
+        predictions = best_pipeline.predict(X[test_indices])
+        y_test = y[test_indices]
+        outer_rows.append({
+            "params": best_params,
+            "mean_test_recall": float(recall_score(y_test, predictions)),
+            "mean_test_specificity": float(recall_score(y_test, predictions, pos_label=0)),
+            "mean_test_uar": float(balanced_accuracy_score(y_test, predictions)),
+        })
+        print(f"Outer fold {fold}/{N_OUTER_SPLITS}: UAR={outer_rows[-1]['mean_test_uar']:.6f}")
+    return pd.DataFrame(outer_rows)
+
+
 def main(sex: str = "women", classifier_str="stacking_adaboost"):
     """
     Main function for the classifier pipeline.
@@ -170,19 +218,18 @@ def main(sex: str = "women", classifier_str="stacking_adaboost"):
     }
 
     pipeline, param_grid = get_classifier(classifier_str, random_seed=RANDOM_SEED)
-    cross_validation = StratifiedKFold(n_splits=10, shuffle=True, random_state=RANDOM_SEED)
-    total_fits = N_OPTUNA_TRIALS * cross_validation.get_n_splits()
-    print(f"Starting {classifier_str} TPE search for {sex}: {total_fits} fits total.")
-    search_results = run_optuna_search(
+    total_fits = N_OUTER_SPLITS * (N_OPTUNA_TRIALS * N_INNER_SPLITS * N_INNER_REPEATS + 1)
+    print(f"Starting {classifier_str} nested CV for {sex}: {total_fits} fits total.")
+    search_results = run_nested_cross_validation(
         X=dataset["X"],
         y=dataset["y"],
         pipeline=pipeline,
         classifier=classifier_str,
         param_grid=param_grid,
-        cross_validation=cross_validation,
+        results_data=results_data,
     )
 
-    # dump Optuna search results to results.csv
+    # Save held-out outer-fold scores; these estimate the tuning procedure's performance.
     search_results.round(6)[["params", "mean_test_recall", "mean_test_specificity", "mean_test_uar"]].to_csv(
         results_data.joinpath("results.csv"),
         index=False,
@@ -200,7 +247,7 @@ if __name__ == "__main__":
     # argument parser
     parser = argparse.ArgumentParser(
         prog="classifier_pipeline.py",
-        description="Perform Optuna TPE search for a classifier across various datasets. ",
+        description="Perform nested CV with Optuna and inner 10-times 10-fold CV.",
     )
     parser.add_argument("classifier", type=str)
     parser.add_argument("sex", type=str)
