@@ -141,7 +141,7 @@ def run_optuna_search(
 
     study = optuna.create_study(
         direction="maximize",
-        sampler=optuna.samplers.TPESampler(seed=RANDOM_SEED),
+        sampler=optuna.samplers.TPESampler(seed=RANDOM_SEED, multivariate=True),
     )
     study.optimize(objective, n_trials=N_OPTUNA_TRIALS, n_jobs=1, show_progress_bar=False)
     sys.stdout.write("\n")

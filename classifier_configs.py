@@ -23,7 +23,7 @@ os.environ["PYTHONWARNINGS"] = "ignore"
 def _get_scaled_model(estimator):
     return SklearnPipeline(
         [
-            ("minmaxscaler", MinMaxScaler()),
+            #("minmaxscaler", MinMaxScaler()),
             ("model", estimator),
         ]
     )
@@ -43,28 +43,28 @@ grids = {
         "classifier__gamma": {"low": 0.001, "high": 1, "log": True},
     },
     "random_forest": {
-        "classifier__n_estimators": {"low": 20, "high": 250, "step": 1},
+        "classifier__n_estimators": {"low": 20, "high": 500, "step": 1},
         "classifier__criterion": ["gini"],
         "classifier__min_samples_split": {"low": 2, "high": 6, "step": 1},
         "classifier__max_features": ["sqrt"],
     },
     "adaboost": {
-        "classifier__n_estimators": {"low": 40, "high": 400, "step": 1},
-        "classifier__learning_rate": {"low": 0.01, "high": 100, "log": True},
+        "classifier__n_estimators": {"low": 40, "high": 500, "step": 1},
+        "classifier__learning_rate": {"low": 0.01, "high": 1, "log": True},
     },
 }
 
 # stacking classifiers
 grids |= {
     "stacking_adaboost": [
-        {
-            **{k.replace("classifier__", "classifier__svm__model__"): v for k, v in grids["svm_poly"].items()},
-            **{k.replace("classifier__", "classifier__adaboost__model__"): v for k, v in grids["adaboost"].items()},
-            **{
-                k.replace("classifier__", "classifier__random_forest__model__"): v
-                for k, v in grids["random_forest"].items()
-            },
-        },
+#        {
+#            **{k.replace("classifier__", "classifier__svm__model__"): v for k, v in grids["svm_poly"].items()},
+#            **{k.replace("classifier__", "classifier__adaboost__model__"): v for k, v in grids["adaboost"].items()},
+#            **{
+#                k.replace("classifier__", "classifier__random_forest__model__"): v
+#                for k, v in grids["random_forest"].items()
+#            },
+#        },
         {
             **{k.replace("classifier__", "classifier__svm__model__"): v for k, v in grids["svm_rbf"].items()},
             **{k.replace("classifier__", "classifier__adaboost__model__"): v for k, v in grids["adaboost"].items()},
@@ -148,7 +148,7 @@ def get_classifier(
                                 SVC(
                                     max_iter=int(5e5),
                                     random_state=random_seed,
-                                    class_weight="balanced",
+                                    #class_weight="balanced",
                                 )
                             ),
                         ),
@@ -162,7 +162,7 @@ def get_classifier(
                                 RandomForestClassifier(
                                     random_state=random_seed,
                                     n_jobs=1,
-                                    class_weight="balanced",
+                                    #class_weight="balanced",
                                 )
                             ),
                         ),
@@ -179,10 +179,12 @@ def get_classifier(
         case _:
             raise ValueError(f"Unknown classifier: {classifier_name}")
 
-    if "stacking" not in classifier_name:
-        pipe = Pipeline([("minmaxscaler", MinMaxScaler()), classifier])
-    else:
-        pipe = Pipeline([classifier])
+    pipe = Pipeline([("minmaxscaler", MinMaxScaler()), classifier])
+
+    # if "stacking" not in classifier_name:
+    #     pipe = Pipeline([("minmaxscaler", MinMaxScaler()), classifier])
+    # else:
+    #     pipe = Pipeline([classifier])
 
     if hyperparameters is not None:
         pipe.set_params(**hyperparameters)
