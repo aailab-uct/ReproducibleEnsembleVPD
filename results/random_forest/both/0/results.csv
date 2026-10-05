@@ -1,0 +1,11 @@
+params,mean_test_recall,mean_test_specificity,mean_test_uar
+"{'classifier__n_estimators': 192, 'classifier__criterion': 'gini', 'classifier__min_samples_split': 6, 'classifier__max_features': 'sqrt'}",0.868132,0.791045,0.829588
+"{'classifier__n_estimators': 261, 'classifier__criterion': 'gini', 'classifier__min_samples_split': 4, 'classifier__max_features': 'sqrt'}",0.858696,0.848485,0.85359
+"{'classifier__n_estimators': 83, 'classifier__criterion': 'gini', 'classifier__min_samples_split': 6, 'classifier__max_features': 'sqrt'}",0.869565,0.818182,0.843874
+"{'classifier__n_estimators': 52, 'classifier__criterion': 'gini', 'classifier__min_samples_split': 6, 'classifier__max_features': 'sqrt'}",0.869565,0.818182,0.843874
+"{'classifier__n_estimators': 38, 'classifier__criterion': 'gini', 'classifier__min_samples_split': 6, 'classifier__max_features': 'sqrt'}",0.836957,0.727273,0.782115
+"{'classifier__n_estimators': 389, 'classifier__criterion': 'gini', 'classifier__min_samples_split': 4, 'classifier__max_features': 'sqrt'}",0.869565,0.909091,0.889328
+"{'classifier__n_estimators': 412, 'classifier__criterion': 'gini', 'classifier__min_samples_split': 3, 'classifier__max_features': 'sqrt'}",0.804348,0.878788,0.841568
+"{'classifier__n_estimators': 119, 'classifier__criterion': 'gini', 'classifier__min_samples_split': 4, 'classifier__max_features': 'sqrt'}",0.868132,0.727273,0.797702
+"{'classifier__n_estimators': 442, 'classifier__criterion': 'gini', 'classifier__min_samples_split': 6, 'classifier__max_features': 'sqrt'}",0.89011,0.818182,0.854146
+"{'classifier__n_estimators': 130, 'classifier__criterion': 'gini', 'classifier__min_samples_split': 5, 'classifier__max_features': 'sqrt'}",0.923077,0.848485,0.885781

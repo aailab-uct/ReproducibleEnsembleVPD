@@ -1,0 +1,11 @@
+params,mean_test_recall,mean_test_specificity,mean_test_uar
+"{'classifier__C': 6.16586052009283, 'classifier__kernel': 'rbf', 'classifier__gamma': 0.7816957235797414}",0.857143,0.791045,0.824094
+"{'classifier__C': 5.295899641688096, 'classifier__kernel': 'rbf', 'classifier__gamma': 0.8558395426624613}",0.836957,0.878788,0.857872
+"{'classifier__C': 22.604915631800587, 'classifier__kernel': 'rbf', 'classifier__gamma': 0.0811487362191128}",0.815217,0.833333,0.824275
+"{'classifier__C': 64560.70039945184, 'classifier__kernel': 'rbf', 'classifier__gamma': 0.003258975638457246}",0.858696,0.878788,0.868742
+"{'classifier__C': 5767.772882849309, 'classifier__kernel': 'rbf', 'classifier__gamma': 0.008610676904701317}",0.815217,0.863636,0.839427
+"{'classifier__C': 14.860877503059202, 'classifier__kernel': 'rbf', 'classifier__gamma': 0.7185906921869829}",0.880435,0.939394,0.909914
+"{'classifier__C': 2625.8398838461685, 'classifier__kernel': 'rbf', 'classifier__gamma': 0.041799050399425074}",0.793478,0.924242,0.85886
+"{'classifier__C': 21.008075444052714, 'classifier__kernel': 'rbf', 'classifier__gamma': 0.5068924959108354}",0.846154,0.742424,0.794289
+"{'classifier__C': 8.010890277513818, 'classifier__kernel': 'rbf', 'classifier__gamma': 0.9214836018243857}",0.846154,0.878788,0.862471
+"{'classifier__C': 5.880262845557427, 'classifier__kernel': 'rbf', 'classifier__gamma': 0.974843079950241}",0.89011,0.863636,0.876873

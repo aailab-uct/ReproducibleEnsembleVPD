@@ -1,0 +1,11 @@
+params,mean_test_recall,mean_test_specificity,mean_test_uar
+"{'classifier__n_estimators': 416, 'classifier__learning_rate': 0.15609948822813205}",0.923077,0.780488,0.851782
+"{'classifier__n_estimators': 397, 'classifier__learning_rate': 0.4534904438260636}",0.903846,0.804878,0.854362
+"{'classifier__n_estimators': 98, 'classifier__learning_rate': 0.50631980149258}",0.846154,0.780488,0.813321
+"{'classifier__n_estimators': 367, 'classifier__learning_rate': 0.20235873339999327}",0.923077,0.853659,0.888368
+"{'classifier__n_estimators': 288, 'classifier__learning_rate': 0.4931114886746648}",0.941176,0.804878,0.873027
+"{'classifier__n_estimators': 296, 'classifier__learning_rate': 0.17635592502139427}",0.941176,0.658537,0.799857
+"{'classifier__n_estimators': 239, 'classifier__learning_rate': 0.038234752246751866}",0.921569,0.756098,0.838833
+"{'classifier__n_estimators': 84, 'classifier__learning_rate': 0.37930332461884453}",0.961538,0.8,0.880769
+"{'classifier__n_estimators': 123, 'classifier__learning_rate': 0.023270677083837805}",0.980769,0.875,0.927885
+"{'classifier__n_estimators': 120, 'classifier__learning_rate': 0.41533327796831176}",0.865385,0.8,0.832692
