@@ -51,7 +51,6 @@ if __name__ == "__main__":
         classifiers=[
             "stacking_adaboost",
             "svm_rbf",
-            "svm_poly",
             "random_forest",
             "adaboost",
         ],
