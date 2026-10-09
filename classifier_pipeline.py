@@ -29,10 +29,10 @@ os.environ["PYTHONWARNINGS"] = "ignore"
 # setup random seed to make code reproducible
 RANDOM_SEED = 42
 np.random.seed(RANDOM_SEED)
-N_OPTUNA_TRIALS = 200
-N_OUTER_SPLITS = 5
-N_INNER_SPLITS = 5
-N_INNER_REPEATS = 10
+N_OPTUNA_TRIALS = 500
+N_OUTER_SPLITS = 10
+N_INNER_SPLITS = 10
+N_INNER_REPEATS = 1
 
 
 # speedup
@@ -141,7 +141,7 @@ def run_optuna_search(
 
     study = optuna.create_study(
         direction="maximize",
-        sampler=optuna.samplers.TPESampler(seed=RANDOM_SEED, n_startup_trials=20),
+        sampler=optuna.samplers.TPESampler(seed=RANDOM_SEED, n_startup_trials=20, multivariate=True),
     )
     study.optimize(objective, n_trials=N_OPTUNA_TRIALS, n_jobs=1, show_progress_bar=False)
     sys.stdout.write("\n")

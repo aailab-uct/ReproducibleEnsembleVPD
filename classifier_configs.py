@@ -12,7 +12,7 @@ from sklearn.ensemble import (
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
 from sklearn.pipeline import Pipeline as SklearnPipeline
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.svm import SVC
 
 # Disable warnings
@@ -23,7 +23,7 @@ os.environ["PYTHONWARNINGS"] = "ignore"
 def _get_scaled_model(estimator):
     return SklearnPipeline(
         [
-            #("minmaxscaler", MinMaxScaler()),
+            ("minmaxscaler", MinMaxScaler()),
             ("model", estimator),
         ]
     )
@@ -66,6 +66,8 @@ grids |= {
 #            },
 #        },
         {
+            "classifier__final_estimator__model__C": {"low": 0.001, "high": 1000, "log": True},
+            "classifier__final_estimator__model__class_weight": [None, "balanced"],
             **{k.replace("classifier__", "classifier__svm__model__"): v for k, v in grids["svm_rbf"].items()},
             **{k.replace("classifier__", "classifier__adaboost__model__"): v for k, v in grids["adaboost"].items()},
             **{
@@ -167,10 +169,18 @@ def get_classifier(
                             ),
                         ),
                     ],
-                    final_estimator=LogisticRegression(
-                        class_weight="balanced",
-                        max_iter=5000,
-                        random_state=random_seed,
+                    final_estimator=SklearnPipeline(
+                        [
+                            ("standardscaler", StandardScaler()),
+                            (
+                                "model",
+                                LogisticRegression(
+                                    class_weight="balanced",
+                                    max_iter=5000,
+                                    random_state=random_seed,
+                                ),
+                            ),
+                        ]
                     ),
                     cv=StratifiedKFold(n_splits=10, shuffle=True, random_state=random_seed),
                     n_jobs=-1,
@@ -179,12 +189,11 @@ def get_classifier(
         case _:
             raise ValueError(f"Unknown classifier: {classifier_name}")
 
-    pipe = Pipeline([("minmaxscaler", MinMaxScaler()), classifier])
-
-    # if "stacking" not in classifier_name:
-    #     pipe = Pipeline([("minmaxscaler", MinMaxScaler()), classifier])
-    # else:
-    #     pipe = Pipeline([classifier])
+    if classifier_name == "stacking_adaboost":
+        # Fit input scalers separately within stacking's cross-validation folds.
+        pipe = Pipeline([classifier])
+    else:
+        pipe = Pipeline([("minmaxscaler", MinMaxScaler()), classifier])
 
     if hyperparameters is not None:
         pipe.set_params(**hyperparameters)
