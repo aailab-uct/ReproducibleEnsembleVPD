@@ -87,4 +87,4 @@ def process_results(classifiers: list[str]):
 
 
 if __name__ == "__main__":
-    process_results(classifiers=["voting"])
+    process_results(classifiers=["adaboost","random_forest", "stacking_adaboost", "svm_rbf"])
